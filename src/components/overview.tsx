@@ -1,14 +1,25 @@
+
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { getExpenseChartData } from "@/lib/data"
-import { ChartTooltipContent } from "./ui/chart"
+import { ChartContainer, ChartTooltipContent } from "./ui/chart"
 
 export function Overview() {
   const data = getExpenseChartData()
+  const chartConfig = {
+    income: {
+      label: "Income",
+      color: "hsl(var(--accent))",
+    },
+    expenses: {
+      label: "Expenses",
+      color: "hsl(var(--primary))",
+    },
+  };
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
+    <ChartContainer config={chartConfig} className="w-full h-[350px]">
       <BarChart data={data}>
         <XAxis
           dataKey="name"
@@ -35,9 +46,9 @@ export function Overview() {
               )}
           />}
         />
-        <Bar dataKey="income" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="expenses" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   )
 }

@@ -26,12 +26,9 @@ export default function ExpensesPage() {
       value: { label: "Value" },
       ...expenseByCategory.reduce((acc, cur) => ({
           ...acc,
-          [cur.name]: { label: cur.name }
+          [cur.name.toLowerCase()]: { label: cur.name, color: cur.color }
       }), {})
   };
-
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
-
 
   return (
     <div className="grid flex-1 items-start gap-4 md:gap-8">
@@ -91,7 +88,7 @@ export default function ExpensesPage() {
                   strokeWidth={5}
                 >
                 {expenseByCategory.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
                 </Pie>
                 <ChartLegend

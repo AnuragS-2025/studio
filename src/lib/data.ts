@@ -93,10 +93,18 @@ export const getExpenseChartData = () => {
 
 export const getExpenseByCategoryData = () => {
     const expenseByCategory: { [key: string]: number } = {};
+    const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+    const categories = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))];
+
     transactions
         .filter(t => t.type === 'expense')
         .forEach(t => {
             expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
         });
-    return Object.entries(expenseByCategory).map(([name, value]) => ({ name, value }));
+
+    return Object.entries(expenseByCategory).map(([name, value], index) => ({
+      name,
+      value,
+      color: COLORS[index % COLORS.length]
+    }));
 }

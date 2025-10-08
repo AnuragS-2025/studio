@@ -13,9 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { getMarketData } from "@/lib/data";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartTooltipContent } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +22,7 @@ export default function MarketPage() {
   const marketData = getMarketData();
 
   return (
-    <div className="grid flex-1 items-start gap-4 md:gap-8">
+    <div className="grid flex-1 items-start gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Market Analysis</CardTitle>

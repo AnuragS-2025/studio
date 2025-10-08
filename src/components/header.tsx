@@ -27,6 +27,7 @@ import { UserNav } from "./user-nav";
 import { SidebarTrigger } from "./ui/sidebar";
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export function Header() {
   return (
@@ -36,6 +37,7 @@ export function Header() {
       <div className="relative ml-auto flex-1 md:grow-0">
         {/* Can add a search bar here if needed */}
       </div>
+      <ThemeSwitcher />
       <UserNav />
     </header>
   );

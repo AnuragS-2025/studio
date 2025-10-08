@@ -35,7 +35,7 @@ export default function PortfolioPage() {
   const portfolioValue = getPortfolioValue();
 
   return (
-    <div className="grid flex-1 items-start gap-4 md:gap-8">
+    <div className="grid flex-1 items-start gap-4">
       <div className="flex items-center">
         <div className="grid gap-2">
             <h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>

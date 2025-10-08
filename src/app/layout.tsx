@@ -7,6 +7,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import { Header } from "@/components/header";
 import { MainNav } from "@/components/main-nav";
 import { Icons } from "@/components/icons";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const font = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -28,32 +29,39 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased", font.className)}>
-        <Toaster />
-        <SidebarProvider>
-          <div className="min-h-screen w-full">
-            <Sidebar variant="sidebar" collapsible="icon">
-              <div className="flex h-full flex-col">
-                <div className="flex h-14 items-center border-b px-4">
-                  <a href="/" className="flex items-center gap-2 font-semibold text-primary">
-                    <Icons.logo className="h-6 w-6" />
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      WealthWise AI
-                    </span>
-                  </a>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Toaster />
+          <SidebarProvider>
+            <div className="min-h-screen w-full">
+              <Sidebar variant="sidebar" collapsible="icon">
+                <div className="flex h-full flex-col">
+                  <div className="flex h-14 items-center border-b px-4">
+                    <a href="/" className="flex items-center gap-2 font-semibold text-primary">
+                      <Icons.logo className="h-6 w-6" />
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        WealthWise AI
+                      </span>
+                    </a>
+                  </div>
+                  <div className="flex-1 overflow-auto py-2">
+                    <MainNav />
+                  </div>
                 </div>
-                <div className="flex-1 overflow-auto py-2">
-                  <MainNav />
-                </div>
-              </div>
-            </Sidebar>
-            <SidebarInset>
-              <Header />
-              <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
-                {children}
-              </main>
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
+              </Sidebar>
+              <SidebarInset>
+                <Header />
+                <main className="flex-1 p-4 bg-background">
+                  {children}
+                </main>
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

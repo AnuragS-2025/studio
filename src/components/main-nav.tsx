@@ -37,15 +37,17 @@ export function MainNav() {
         {navItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
-              as={Link}
+              asChild
               href={item.href}
               isActive={pathname === item.href}
               tooltip={item.label}
             >
-              <item.icon className="h-4 w-4" />
-              <span className="group-data-[collapsible=icon]:hidden">
-                {item.label}
-              </span>
+              <Link href={item.href}>
+                <item.icon className="h-4 w-4" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  {item.label}
+                </span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

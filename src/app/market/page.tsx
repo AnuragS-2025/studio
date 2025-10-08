@@ -22,7 +22,7 @@ export default function MarketPage() {
   const marketData = getMarketData();
 
   return (
-    <div className="grid flex-1 items-start gap-4">
+    <div className="grid flex-1 items-start gap-2 p-2">
       <Card>
         <CardHeader>
           <CardTitle>Market Analysis</CardTitle>
@@ -31,7 +31,7 @@ export default function MarketPage() {
           </CardDescription>
         </CardHeader>
       </Card>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-2 md:grid-cols-2">
         {marketData.map((stock) => (
           <Card key={stock.name}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

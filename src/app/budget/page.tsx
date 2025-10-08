@@ -22,8 +22,8 @@ export default function BudgetPage() {
   };
 
   return (
-    <div className="grid flex-1 items-start gap-4">
-      <div className="grid gap-4">
+    <div className="grid flex-1 items-start gap-2 p-2">
+      <div className="grid gap-2">
         <Card>
           <CardHeader>
             <CardTitle>Budgeting Tool</CardTitle>
@@ -32,7 +32,7 @@ export default function BudgetPage() {
             </CardDescription>
           </CardHeader>
         </Card>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
           {budgets.map((budget) => {
             const progress = (budget.spent / budget.limit) * 100;
             return (

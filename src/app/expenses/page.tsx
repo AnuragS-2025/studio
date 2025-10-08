@@ -31,8 +31,8 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="grid flex-1 items-start gap-4">
-      <div className="grid gap-4 lg:grid-cols-5">
+    <div className="grid flex-1 items-start gap-2 p-2">
+      <div className="grid gap-2 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Transaction History</CardTitle>

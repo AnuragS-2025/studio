@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { getFinancialAdvice } from '@/lib/actions';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -27,7 +28,7 @@ function SubmitButton() {
 }
 
 export function AdvisorForm() {
-  const [state, formAction] = useFormState(getFinancialAdvice, initialState);
+  const [state, formAction] = useActionState(getFinancialAdvice, initialState);
   const { toast } = useToast();
 
   useEffect(() => {

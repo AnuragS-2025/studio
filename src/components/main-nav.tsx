@@ -10,48 +10,42 @@ import {
   PiggyBank,
   GanttChartSquare,
   Sparkles,
+  Target,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
+import { Icons } from "./icons";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/portfolio", icon: Wallet, label: "Portfolio" },
-  { href: "/market", icon: CandlestickChart, label: "Market" },
-  { href: "/expenses", icon: PiggyBank, label: "Expenses" },
-  { href: "/budget", icon: GanttChartSquare, label: "Budget" },
-  { href: "/goals", icon: GanttChartSquare, label: "Goals" },
-  { href: "/advisor", icon: Sparkles, label: "AI Advisor" },
+  { href: "#dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "#portfolio", icon: Wallet, label: "Portfolio" },
+  { href: "#market", icon: CandlestickChart, label: "Market" },
+  { href: "#expenses", icon: PiggyBank, label: "Expenses" },
+  { href: "#budget", icon: GanttChartSquare, label: "Budget" },
+  { href: "#goals", icon: Target, label: "Goals" },
+  { href: "#advisor", icon: Sparkles, label: "AI Advisor" },
 ];
 
 export function MainNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-      <SidebarMenu>
+    <nav className="grid gap-2 text-lg font-medium">
+      <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-semibold mb-4"
+        >
+          <Icons.logo className="h-6 w-6" />
+          <span className="sr-only">WealthWise AI</span>
+        </Link>
         {navItems.map((item) => (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              href={item.href}
-              isActive={pathname === item.href}
-              tooltip={item.label}
-            >
-              <Link href={item.href}>
-                <item.icon className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">
-                  {item.label}
-                </span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          <Link
+            key={item.href}
+            href={item.href}
+            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+          >
+            <item.icon className="h-5 w-5" />
+            {item.label}
+          </Link>
         ))}
-      </SidebarMenu>
     </nav>
   );
 }

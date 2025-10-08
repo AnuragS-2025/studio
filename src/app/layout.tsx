@@ -3,10 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
-import { MainNav } from "@/components/main-nav";
-import { Icons } from "@/components/icons";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const font = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -22,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning style={{scrollBehavior:'smooth'}}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -36,31 +33,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Toaster />
-          <SidebarProvider>
-            <div className="min-h-screen w-full">
-              <Sidebar variant="sidebar" collapsible="icon">
-                <div className="flex h-full flex-col">
-                  <div className="flex h-14 items-center border-b px-4">
-                    <a href="/" className="flex items-center gap-2 font-semibold text-primary">
-                      <Icons.logo className="h-6 w-6" />
-                      <span className="group-data-[collapsible=icon]:hidden">
-                        WealthWise AI
-                      </span>
-                    </a>
-                  </div>
-                  <div className="flex-1 overflow-auto py-2">
-                    <MainNav />
-                  </div>
-                </div>
-              </Sidebar>
-              <SidebarInset>
-                <Header />
-                <main className="flex-1 bg-background p-2">
-                  {children}
-                </main>
-              </SidebarInset>
-            </div>
-          </SidebarProvider>
+          <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex flex-1 flex-col gap-4 bg-background p-4 md:gap-8 md:p-8">
+              {children}
+            </main>
+          </div>
         </ThemeProvider>
       </body>
     </html>

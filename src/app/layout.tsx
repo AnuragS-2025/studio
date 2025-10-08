@@ -55,7 +55,7 @@ export default function RootLayout({
               </Sidebar>
               <SidebarInset>
                 <Header />
-                <main className="flex-1 bg-background">
+                <main className="flex-1 bg-background p-2">
                   {children}
                 </main>
               </SidebarInset>

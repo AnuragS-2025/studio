@@ -22,7 +22,7 @@ export default function MarketPage() {
   const marketData = getMarketData();
 
   return (
-    <div className="grid flex-1 items-start gap-2 p-2">
+    <div className="grid flex-1 items-start gap-2">
       <Card>
         <CardHeader>
           <CardTitle>Market Analysis</CardTitle>

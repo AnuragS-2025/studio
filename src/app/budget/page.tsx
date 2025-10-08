@@ -22,7 +22,7 @@ export default function BudgetPage() {
   };
 
   return (
-    <div className="grid flex-1 items-start gap-2 p-2">
+    <div className="grid flex-1 items-start gap-2">
       <div className="grid gap-2">
         <Card>
           <CardHeader>

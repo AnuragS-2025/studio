@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <main className="flex flex-1 flex-col gap-2 p-2">
+      <main className="flex flex-1 flex-col gap-2">
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -95,7 +95,7 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
-        <div className="grid gap-2 md:gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader>
               <CardTitle>Expense Overview</CardTitle>

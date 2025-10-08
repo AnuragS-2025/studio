@@ -3,7 +3,7 @@ import { GoalForm } from './goal-form';
 
 export default function GoalPage() {
   return (
-    <div className="grid flex-1 items-start gap-2 p-2">
+    <div className="grid flex-1 items-start gap-2">
       <Card>
         <CardHeader>
           <CardTitle>Automated Goal Setting</CardTitle>

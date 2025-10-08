@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { getGoalRecommendations } from '@/lib/actions';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sparkles, Target } from 'lucide-react';
-import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const initialState = {
@@ -45,7 +44,7 @@ export function GoalForm() {
   }, [state, toast]);
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="goal">Financial Goal</Label>
@@ -90,7 +89,7 @@ export function GoalForm() {
       <SubmitButton />
 
       {state.data && (
-        <Card className="bg-secondary/50 dark:bg-secondary/20 border-accent">
+        <Card className="mt-6 bg-secondary/50 dark:bg-secondary/20 border-accent">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="text-accent" />

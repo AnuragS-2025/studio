@@ -1,14 +1,14 @@
+
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { getFinancialAdvice } from '@/lib/actions';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
-import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const initialState = {
@@ -44,7 +44,7 @@ export function AdvisorForm() {
 
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-4">
       <div className="grid w-full gap-4">
         <div className="grid w-full gap-1.5">
           <Label htmlFor="financialData">Financial Data</Label>
@@ -70,7 +70,7 @@ export function AdvisorForm() {
       <SubmitButton />
 
       {state.data && (
-        <Card className="bg-secondary/50 dark:bg-secondary/20 border-accent">
+        <Card className="mt-6 bg-secondary/50 dark:bg-secondary/20 border-accent">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="text-accent" />

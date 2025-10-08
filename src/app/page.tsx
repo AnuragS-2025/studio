@@ -40,6 +40,8 @@ import { Label } from "@/components/ui/label";
 import { Area, AreaChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 export default function Home() {
   const portfolioValue = getPortfolioValue();
@@ -67,7 +69,6 @@ export default function Home() {
       <main className="flex flex-1 flex-col gap-4">
         {/* Dashboard Section */}
         <section id="dashboard" className="space-y-4">
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -128,6 +129,57 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
+          
+           {/* AI Hub Section */}
+           <section id="advisor" className="space-y-4">
+           <Card className="bg-gradient-primary-accent border-primary/20 shadow-lg">
+             <CardHeader className="text-center">
+               <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
+                <Sparkles className="h-6 w-6 text-primary" />
+                 Your AI Financial Hub
+                 <Sparkles className="h-6 w-6 text-primary" />
+                 </CardTitle>
+               <CardDescription className="text-lg text-muted-foreground">
+                 Unlock personalized insights and plan your financial future.
+               </CardDescription>
+             </CardHeader>
+             <CardContent>
+                <Tabs defaultValue="advisor" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="advisor">AI Financial Advisor</TabsTrigger>
+                    <TabsTrigger value="goals">Automated Goal Setting</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="advisor">
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle>AI Financial Advisor</CardTitle>
+                        <CardDescription>
+                          Get personalized financial advice and insights by detailing your financial situation and goals below. Our AI will analyze your information and provide actionable recommendations.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <AdvisorForm />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="goals">
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle>Automated Goal Setting</CardTitle>
+                        <CardDescription>
+                          Define your financial goals and let our AI provide a roadmap to achieve them. Fill in your details to get personalized recommendations.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <GoalForm />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+             </CardContent>
+           </Card>
+         </section>
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Card className="xl:col-span-2">
               <CardHeader>
@@ -172,7 +224,7 @@ export default function Home() {
                             {transaction.category}
                           </div>
                         </TableCell>
-                        <TableCell className={`text-right ${transaction.type === 'income' ? 'text-accent' : ''}`}>
+                        <TableCell className={cn("text-right", transaction.type === 'income' ? 'text-green-500' : 'text-red-500')}>
                           {transaction.type === 'expense' ? '-' : '+'}$
                           {transaction.amount.toFixed(2)}
                         </TableCell>
@@ -296,14 +348,14 @@ export default function Home() {
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
-                    <div className={cn("text-sm font-bold", stock.change > 0 ? "text-accent" : "text-destructive")}>
+                    <div className={cn("text-sm font-bold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
                         {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
                     </div>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">${stock.value.toLocaleString()}</div>
                       <div className="h-[120px]">
-                        <ChartContainer config={{value: {label: 'Value', color: stock.change > 0 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'}}} className="w-full h-[120px]">
+                      <ChartContainer config={{value: {label: 'Value', color: stock.change > 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'}}} className="w-full h-full">
                             <AreaChart
                                 data={stock.chartData}
                                 margin={{
@@ -358,7 +410,7 @@ export default function Home() {
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
                             <TableCell>${stock.value.toLocaleString()}</TableCell>
-                            <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-accent" : "text-destructive")}>
+                            <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
                             {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
                             </TableCell>
                         </TableRow>
@@ -397,7 +449,7 @@ export default function Home() {
                             <TableCell>
                             <Badge variant="outline">{transaction.category}</Badge>
                             </TableCell>
-                            <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-accent' : ''}`}>
+                            <TableCell className={cn("text-right font-semibold", transaction.type === 'income' ? 'text-green-500' : '')}>
                             {transaction.type === 'expense' ? '-' : '+'}$
                             {transaction.amount.toFixed(2)}
                             </TableCell>
@@ -492,37 +544,6 @@ export default function Home() {
               </CardFooter>
             </Card>
         </section>
-
-        {/* Goals Section */}
-        <section id="goals" className="space-y-4">
-            <Card>
-                <CardHeader>
-                <CardTitle>Automated Goal Setting</CardTitle>
-                <CardDescription>
-                    Define your financial goals and let our AI provide a roadmap to achieve them. Fill in your details to get personalized recommendations.
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                <GoalForm />
-                </CardContent>
-            </Card>
-        </section>
-
-        {/* AI Advisor Section */}
-        <section id="advisor" className="space-y-4">
-            <Card>
-                <CardHeader>
-                <CardTitle>AI Financial Advisor</CardTitle>
-                <CardDescription>
-                    Get personalized financial advice and insights by detailing your financial situation and goals below. Our AI will analyze your information and provide actionable recommendations.
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                <AdvisorForm />
-                </CardContent>
-            </Card>
-        </section>
-
       </main>
     </div>
   );

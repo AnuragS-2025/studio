@@ -301,38 +301,38 @@ export default function Home() {
                     </div>
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">${stock.value.toLocaleString()}</div>
-                    <div className="h-[120px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                            data={stock.chartData}
-                            margin={{
-                            top: 5,
-                            right: 10,
-                            left: 10,
-                            bottom: 0,
-                            }}
-                        >
-                            <Tooltip
-                            content={
-                                <ChartTooltipContent
-                                indicator="dot"
-                                hideLabel
-                                formatter={(value) => `$${value}`}
+                      <div className="text-2xl font-bold">${stock.value.toLocaleString()}</div>
+                      <div className="h-[120px]">
+                        <ChartContainer config={{value: {label: 'Value', color: stock.change > 0 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'}}} className="w-full h-[120px]">
+                            <AreaChart
+                                data={stock.chartData}
+                                margin={{
+                                top: 5,
+                                right: 10,
+                                left: 10,
+                                bottom: 0,
+                                }}
+                            >
+                                <Tooltip
+                                content={
+                                    <ChartTooltipContent
+                                    indicator="dot"
+                                    hideLabel
+                                    formatter={(value) => `$${value}`}
+                                    />
+                                }
                                 />
-                            }
-                            />
-                            <Area
-                            dataKey="value"
-                            type="natural"
-                            fill={stock.change > 0 ? "hsl(var(--accent))" : "hsl(var(--destructive))"}
-                            fillOpacity={0.1}
-                            stroke={stock.change > 0 ? "hsl(var(--accent))" : "hsl(var(--destructive))"}
-                            stackId="a"
-                            />
-                        </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
+                                <Area
+                                dataKey="value"
+                                type="natural"
+                                fill="var(--color-value)"
+                                fillOpacity={0.1}
+                                stroke="var(--color-value)"
+                                stackId="a"
+                                />
+                            </AreaChart>
+                        </ChartContainer>
+                      </div>
                     </CardContent>
                 </Card>
                 ))}

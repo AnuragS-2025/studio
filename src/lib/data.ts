@@ -96,9 +96,16 @@ export const MOCK_TRANSACTIONS: Omit<Transaction, 'id'>[] = [
 
 export const useUserData = () => {
   const { user } = useUser();
-  return useMemo(() => ({
-    user: user ? { name: user.displayName || 'Anonymous', email: user.email || '' } : MOCK_USER,
-  }), [user]);
+  return useMemo(() => {
+    if (user) {
+        let displayName = user.displayName || 'Anonymous';
+        if (user.email === 'as9771@srmist.edu.in' && !user.displayName) {
+            displayName = 'Anurag Sharan';
+        }
+        return { user: { name: displayName, email: user.email || '' } };
+    }
+    return { user: MOCK_USER };
+  }, [user]);
 };
 
 export const useTransactions = () => {

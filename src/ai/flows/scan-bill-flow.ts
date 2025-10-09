@@ -21,6 +21,7 @@ const prompt = ai.definePrompt({
   name: 'scanBillPrompt',
   input: {schema: ScanBillInputSchema},
   output: {schema: ScanBillOutputSchema},
+  model: 'googleai/gemini-2.5-flash',
   prompt: `You are an expert expense tracker. Analyze the provided bill/receipt image and extract the following information:
   - Vendor: The name of the store or service provider.
   - Amount: The total amount of the bill.

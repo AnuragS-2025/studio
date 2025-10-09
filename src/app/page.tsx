@@ -56,13 +56,20 @@ export default function Home() {
   const expenseByCategory = getExpenseByCategoryData();
   const budgets = getBudgets();
 
-  const chartConfig = {
+  const expenseChartConfig = {
       value: { label: "Value" },
       ...expenseByCategory.reduce((acc, cur) => ({
           ...acc,
           [cur.name.toLowerCase().replace(/ /g, '-')]: { label: cur.name, color: cur.color }
       }), {})
   };
+
+  const marketChartConfig = (change: number) => ({
+      value: {
+          label: 'Value',
+          color: change > 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'
+      }
+  });
 
 
   return (
@@ -356,7 +363,7 @@ export default function Home() {
                     <CardContent>
                       <div className="text-2xl font-bold">₹{stock.value.toLocaleString()}</div>
                       <div className="h-[120px]">
-                      <ChartContainer config={{value: {label: 'Value', color: stock.change > 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'}}} className="w-full h-full">
+                      <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
                             <AreaChart
                                 data={stock.chartData}
                                 margin={{
@@ -477,7 +484,7 @@ export default function Home() {
                         <CardDescription>A breakdown of your spending this month.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                    <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px]">
+                    <ChartContainer config={expenseChartConfig} className="mx-auto aspect-square max-h-[300px]">
                       <PieChart>
                         <ChartTooltip
                           cursor={false}
@@ -560,3 +567,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

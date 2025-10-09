@@ -1,8 +1,9 @@
+
 import { Transaction, Investment, Budget, User } from './types';
 
 const user: User = {
-  name: 'Alex Doe',
-  email: 'alex.doe@example.com',
+  name: 'Anurag Sharan',
+  email: 'anurag.sharan@example.com',
 };
 
 const investments: Investment[] = [
@@ -114,5 +115,7 @@ export const getExpenseByCategoryData = () => {
       color: COLORS[index % COLORS.length]
     }));
 }
+
+    
 
     

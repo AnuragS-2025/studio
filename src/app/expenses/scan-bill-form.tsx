@@ -75,6 +75,8 @@ export function ScanBillForm() {
 
 
   useEffect(() => {
+    if (!state) return;
+
     if (state.message === 'Validation failed' && state.errors) {
       const errorMessages = Object.values(state.errors).flat().join('\n');
       toast({
@@ -83,7 +85,7 @@ export function ScanBillForm() {
         description: errorMessages,
       });
     } else if (state.message === 'Success' && state.data) {
-        if (user) {
+        if (user && firestore) {
             const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
             addDoc(transactionsColRef, {
                 date: state.data.date,
@@ -105,7 +107,7 @@ export function ScanBillForm() {
                 });
             });
         }
-    } else if (state.message && state.message !== 'Success' && !state.errors) {
+    } else if (state.message && state.message !== 'Success') {
       toast({
         variant: "destructive",
         title: "Error",
@@ -207,7 +209,6 @@ export function ScanBillForm() {
         </DialogHeader>
         <form action={formAction} name="scan-bill-form" className="space-y-4">
             <input type="hidden" name="photoDataUri" value={preview || ''} />
-            <input type="hidden" name="userId" value={user?.uid || ''} />
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>
                 {isCameraOpen ? (

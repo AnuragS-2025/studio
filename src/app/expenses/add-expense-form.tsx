@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 const initialState = {
@@ -44,6 +44,8 @@ export function AddExpenseForm() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!state) return;
+
     if (state.message === 'Validation failed' && state.errors) {
       const errorMessages = Object.values(state.errors).flat().join('\n');
       toast({
@@ -52,9 +54,9 @@ export function AddExpenseForm() {
         description: errorMessages,
       });
     } else if (state.message === 'Success' && state.data) {
-        if (user) {
+        if (user && firestore) {
             const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
-            addDoc(transactionsColRef, { ...state.data, type: 'expense' }).then(() => {
+            addDoc(transactionsColRef, state.data).then(() => {
                  toast({
                     title: "Expense Added",
                     description: `${state.data.description} for ₹${state.data.amount} has been added.`,
@@ -68,7 +70,7 @@ export function AddExpenseForm() {
                 });
             });
         }
-    } else if (state.message && state.message !== 'Success' && !state.errors) {
+    } else if (state.message && state.message !== 'Success') {
       toast({
         variant: "destructive",
         title: "Error",
@@ -95,7 +97,6 @@ export function AddExpenseForm() {
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
-          <input type="hidden" name="userId" value={user?.uid || ''} />
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Input id="description" name="description" placeholder="e.g., Coffee with friend" />

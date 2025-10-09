@@ -5,17 +5,8 @@ import { aiFinancialAdvisor, AiFinancialAdvisorInput } from '@/ai/flows/ai-finan
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
 import { scanBill } from '@/ai/flows/scan-bill-flow';
 import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';
-import { addTransaction } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase/auth';
-
-// NOTE: The Firebase Admin SDK should be used in server actions.
-// However, to get the current user, we'd typically use a server-side
-// auth library or pass the userId from the client. For simplicity in this
-// context, we will adjust this later if auth mechanisms are more clearly defined.
-// For now, we are removing the direct client-SDK call that causes the crash.
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -98,11 +89,13 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
     }
 }
 
+const serverScanBillSchema = z.object({
+    photoDataUri: z.string().min(1, 'Please provide an image.'),
+});
 
 export async function scanBillAction(prevState: any, formData: FormData) {
-    const validatedFields = ScanBillInputSchema.safeParse({
+    const validatedFields = serverScanBillSchema.safeParse({
         photoDataUri: formData.get('photoDataUri'),
-        userId: formData.get('userId'),
     });
 
     if (!validatedFields.success) {
@@ -113,38 +106,11 @@ export async function scanBillAction(prevState: any, formData: FormData) {
         };
     }
     
-    const { photoDataUri, userId } = validatedFields.data;
-
-    if (!photoDataUri) {
-        return {
-            message: 'Validation failed',
-            errors: { photoDataUri: ['Please provide an image.'] },
-            data: null,
-        }
-    }
-    if (!userId) {
-        return {
-            message: 'User not authenticated.',
-            errors: null,
-            data: null,
-        };
-    }
+    const { photoDataUri } = validatedFields.data;
 
     try {
         const result = await scanBill({ photoDataUri });
-        
-        // This is where you would use the Admin SDK to get firestore
-        // For now, we are assuming addTransaction can handle it
-        await addTransaction(userId, {
-            date: result.date,
-            description: result.description,
-            amount: result.amount,
-            type: 'expense',
-            category: result.category,
-        });
-
         revalidatePath('/');
-
         return {
             message: 'Success',
             errors: null,
@@ -166,7 +132,6 @@ const addExpenseSchema = z.object({
     amount: z.coerce.number().min(0.01, 'Amount must be greater than 0.'),
     date: z.string().min(1, 'Date is required.'),
     category: z.enum(['Food', 'Transport', 'Social', 'Utilities', 'Shopping', 'Investment', 'Housing', 'Other']),
-    userId: z.string().min(1, 'User ID is required.'),
 });
 
 export async function addExpenseAction(prevState: any, formData: FormData) {
@@ -175,7 +140,6 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
         amount: formData.get('amount'),
         date: formData.get('date'),
         category: formData.get('category'),
-        userId: formData.get('userId'),
     });
 
     if (!validatedFields.success) {
@@ -186,25 +150,12 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
         };
     }
     
-    const { userId, ...transactionData } = validatedFields.data;
-    
     const newTransaction = {
-        ...transactionData,
+        ...validatedFields.data,
         type: 'expense' as const,
     };
 
-    if (!userId) {
-        return {
-            message: 'User not authenticated.',
-            errors: null,
-            data: null,
-        };
-    }
-
     try {
-        // This is where you would use the Admin SDK to get firestore
-        // For now, we are assuming addTransaction can handle it
-        await addTransaction(userId, newTransaction);
         revalidatePath('/');
         return {
             message: 'Success',

@@ -2,20 +2,32 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuth, useUser } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useUser } from '@/firebase';
+import { usePathname, useRouter } from 'next/navigation';
+
+const publicPaths = ['/login'];
 
 export function AuthInitializer() {
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // When the component mounts and we are not in a loading state and there is no user,
-    // then we want to sign the user in anonymously.
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
+    if (isUserLoading) return; // Wait until user status is determined
+
+    const isPublicPath = publicPaths.includes(pathname);
+
+    if (!user && !isPublicPath) {
+      // If user is not logged in and not on a public page, redirect to login
+      router.push('/login');
+    } else if (user && isPublicPath) {
+      // If user is logged in and on a public page (like login), redirect to home
+      router.push('/');
     }
-  }, [auth, user, isUserLoading]);
+    // If user is logged in and on a private page, do nothing.
+    // If user is not logged in and on a public page, do nothing.
+
+  }, [user, isUserLoading, router, pathname]);
 
   // This component doesn't render anything to the DOM.
   return null;

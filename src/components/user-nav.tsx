@@ -13,12 +13,26 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useUserData } from "@/lib/data"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
-import { useUser } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function UserNav() {
   const { user: authUser, isUserLoading } = useUser();
   const { user: userData } = useUserData();
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+        await signOut(auth);
+        router.push('/login');
+    } catch (error) {
+        console.error("Error signing out: ", error);
+    }
+  }
 
   const getInitials = (name: string) => {
     if (!name) return '??';
@@ -33,6 +47,14 @@ export function UserNav() {
 
   if (isUserLoading) {
     return <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />;
+  }
+
+  if(!authUser) {
+    return (
+        <Button asChild>
+            <Link href="/login">Login</Link>
+        </Button>
+    )
   }
 
   return (
@@ -67,7 +89,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>

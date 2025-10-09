@@ -92,7 +92,7 @@
         }
     },
     "auth": {
-        "providers": ["anonymous"]
+        "providers": ["anonymous", "google.com", "password"]
     },
     "firestore": {
         "collections": [

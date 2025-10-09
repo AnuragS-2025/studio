@@ -63,6 +63,8 @@ export function ScanBillForm() {
         description: `${state.data.description} for ₹${state.data.amount} has been added.`,
       });
       handleClose();
+      // Force a page reload to reflect the new transaction in the list
+      window.location.reload();
     } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",

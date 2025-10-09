@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, FileUp, Loader2, ScanLine, X } from 'lucide-react';
+import { Camera, FileUp, Loader2, ScanLine, X, CameraIcon, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const initialState = {
@@ -45,6 +45,10 @@ export function ScanBillForm() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (state.message === 'Validation failed' && state.errors) {
@@ -69,17 +73,73 @@ export function ScanBillForm() {
     }
   }, [state, toast]);
 
+  useEffect(() => {
+    if (isCameraOpen) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
+        }
+      };
+      getCameraPermission();
+    } else {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    }
+  }, [isCameraOpen, toast]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
+        
+        // Create a new File object to ensure the form state is updated correctly
+        const newFile = new File([selectedFile], selectedFile.name, { type: selectedFile.type });
+        setFile(newFile);
       };
       reader.readAsDataURL(selectedFile);
     }
   };
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUri = canvas.toDataURL('image/jpeg');
+            setPreview(dataUri);
+
+            canvas.toBlob(blob => {
+                if (blob) {
+                    const capturedFile = new File([blob], "capture.jpg", { type: "image/jpeg" });
+                    setFile(capturedFile);
+                }
+            }, 'image/jpeg');
+        }
+        setIsCameraOpen(false);
+    }
+  };
+
 
   const handleClose = () => {
     setFile(null);
@@ -87,9 +147,33 @@ export function ScanBillForm() {
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }
+    setIsCameraOpen(false);
+    setHasCameraPermission(null);
     setOpen(false);
   };
   
+  const resetPreview = () => {
+    setFile(null);
+    setPreview(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  }
+
+  const dataUrlToFile = async (dataUrl: string, fileName: string): Promise<File> => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], fileName, { type: blob.type });
+  }
+
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    if (file) {
+      formData.set('billImage', file, file.name);
+    }
+    formAction(formData);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -101,26 +185,40 @@ export function ScanBillForm() {
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()} onCloseAutoFocus={handleClose}>
+      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} onCloseAutoFocus={handleClose}>
         <DialogHeader>
           <DialogTitle>Scan a Bill or Receipt</DialogTitle>
           <DialogDescription>
-            Upload an image of your bill, and we'll automatically extract the details.
+            Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction}>
+        <form onSubmit={handleFormSubmit}>
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="billImage">Bill Image</Label>
-                    {!preview ? (
+                    {isCameraOpen ? (
+                        <div className="space-y-2">
+                             <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                             {hasCameraPermission === false && (
+                                <Alert variant="destructive">
+                                    <CameraIcon className="h-4 w-4" />
+                                    <AlertTitle>Camera Access Denied</AlertTitle>
+                                    <AlertDescription>
+                                        Please grant camera permission in your browser settings to use this feature.
+                                    </AlertDescription>
+                                </Alert>
+                             )}
+                             <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                    ) : !preview ? (
                         <div 
-                            className="flex justify-center items-center w-full h-48 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
+                            className="flex flex-col justify-center items-center w-full h-48 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
                             onClick={() => fileInputRef.current?.click()}
                         >
                             <div className="text-center">
-                                <FileUp className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                                <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                                <FileUp className="mx-auto h-10 w-10 text-muted-foreground" />
+                                <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag & drop</p>
+                                <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
                             </div>
                         </div>
                     ) : (
@@ -131,11 +229,7 @@ export function ScanBillForm() {
                                 variant="destructive"
                                 size="icon"
                                 className="absolute top-2 right-2 h-6 w-6"
-                                onClick={() => {
-                                    setFile(null);
-                                    setPreview(null);
-                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                }}
+                                onClick={resetPreview}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -150,7 +244,24 @@ export function ScanBillForm() {
                         onChange={handleFileChange}
                         accept="image/png, image/jpeg" 
                     />
-                     {state.errors?.billImage && <p className="text-sm text-destructive">{state.errors.billImage.join(', ')}</p>}
+                    {state.errors?.billImage && <p className="text-sm text-destructive">{state.errors.billImage.join(', ')}</p>}
+                </div>
+
+                <div className="flex justify-center items-center gap-2">
+                    {!isCameraOpen ? (
+                        <Button type="button" variant="outline" onClick={() => setIsCameraOpen(true)} className="w-full">
+                            <CameraIcon className="mr-2 h-4 w-4" /> Use Camera
+                        </Button>
+                    ) : (
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setIsCameraOpen(false)} className="w-full">
+                                Close Camera
+                            </Button>
+                            <Button type="button" onClick={handleCapture} disabled={hasCameraPermission === false} className="w-full">
+                                <Camera className="mr-2 h-4 w-4" /> Capture
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
             <DialogFooter>

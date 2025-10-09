@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Icons } from "@/components/icons"
 import { useAuth } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -52,11 +52,25 @@ export default function LoginPage() {
             await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
         } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Login Failed",
-                description: "The email or password you entered is incorrect. Please try again.",
-            });
+            // If sign-in fails, try to create a new account
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                 try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    router.push('/');
+                } catch (signUpError: any) {
+                     toast({
+                        variant: "destructive",
+                        title: "Sign-Up Failed",
+                        description: signUpError.message || "Could not create a new account.",
+                    });
+                }
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Login Failed",
+                    description: "The email or password you entered is incorrect. Please try again.",
+                });
+            }
             setIsLoading(false);
         }
     };
@@ -71,9 +85,9 @@ export default function LoginPage() {
                     <div className="flex justify-center">
                         <Icons.logo className="h-8 w-8 mb-2" />
                     </div>
-                    <CardTitle className="text-2xl">Welcome Back</CardTitle>
+                    <CardTitle className="text-2xl">Welcome</CardTitle>
                     <CardDescription>
-                        Sign in to access your financial dashboard
+                        Sign in or create an account to access your dashboard
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleEmailSignIn}>
@@ -89,7 +103,7 @@ export default function LoginPage() {
                                     ></path>
                                 </svg>
                             )}
-                            Google
+                            Continue with Google
                         </Button>
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
@@ -113,7 +127,7 @@ export default function LoginPage() {
                     <CardFooter>
                         <Button className="w-full" type="submit" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In
+                            Sign In / Sign Up
                         </Button>
                     </CardFooter>
                 </form>

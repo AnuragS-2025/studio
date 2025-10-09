@@ -171,3 +171,82 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
         };
     }
 }
+
+const addIncomeSchema = z.object({
+    description: z.string().min(1, 'Description is required.'),
+    amount: z.coerce.number().min(0.01, 'Amount must be greater than 0.'),
+    date: z.string().min(1, 'Date is required.'),
+    category: z.enum(['Salary', 'Freelance', 'Investment', 'Other']),
+});
+
+export async function addIncomeAction(prevState: any, formData: FormData) {
+    const validatedFields = addIncomeSchema.safeParse({
+        description: formData.get('description'),
+        amount: formData.get('amount'),
+        date: formData.get('date'),
+        category: formData.get('category'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+            data: null,
+        };
+    }
+    
+    const newTransaction = {
+        ...validatedFields.data,
+        type: 'income' as const,
+    };
+
+    try {
+        revalidatePath('/');
+        return {
+            message: 'Success',
+            errors: null,
+            data: newTransaction,
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+            message: `An error occurred while adding the income: ${errorMessage}`,
+            errors: null,
+            data: null,
+        };
+    }
+}
+
+const updateProfileSchema = z.object({
+  displayName: z.string().min(2, 'Name must be at least 2 characters long.'),
+});
+
+export async function updateProfileAction(prevState: any, formData: FormData) {
+  const validatedFields = updateProfileSchema.safeParse({
+    displayName: formData.get('displayName'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    revalidatePath('/');
+    return {
+      message: 'Success',
+      errors: null,
+      data: { displayName: validatedFields.data.displayName },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return {
+      message: `An error occurred while updating the profile: ${errorMessage}`,
+      errors: null,
+      data: null,
+    };
+  }
+}

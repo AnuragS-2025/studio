@@ -45,6 +45,7 @@ import { ScanBillForm } from "./expenses/scan-bill-form";
 import { AddExpenseForm } from "./expenses/add-expense-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { AddIncomeForm } from "./expenses/add-income-form";
 
 
 export default function Home() {
@@ -448,12 +449,13 @@ export default function Home() {
         <section id="expenses" className="space-y-4">
            <div className="flex items-center">
             <div className="grid gap-2">
-                <h2 className="text-3xl font-bold tracking-tight">Expenses</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
                 <p className="text-muted-foreground">
-                    A detailed view of your spending.
+                    A detailed view of your income and spending.
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <AddIncomeForm />
               <AddExpenseForm />
               <ScanBillForm />
             </div>

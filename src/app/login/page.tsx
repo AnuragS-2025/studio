@@ -26,7 +26,8 @@ export default function LoginPage() {
     const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSigningIn, setIsSigningIn] = useState(false);
+    const [isSigningUp, setIsSigningUp] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const handleGoogleSignIn = async () => {
@@ -41,39 +42,63 @@ export default function LoginPage() {
                 title: "Login Failed",
                 description: error.message || "An unexpected error occurred during Google sign-in.",
             });
+        } finally {
             setIsGoogleLoading(false);
         }
     };
 
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
+        if(isSigningUp) return; // Don't trigger on sign up click
+        setIsSigningIn(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
         } catch (error: any) {
-            // If sign-in fails, try to create a new account
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                 try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    router.push('/');
-                } catch (signUpError: any) {
-                     toast({
-                        variant: "destructive",
-                        title: "Sign-Up Failed",
-                        description: signUpError.message || "Could not create a new account.",
-                    });
-                }
+            let description = "An unexpected error occurred.";
+            if (error.code === 'auth/user-not-found') {
+                description = "No account found with this email. Please sign up first.";
+            } else if (error.code === 'auth/wrong-password') {
+                description = "The password you entered is incorrect. Please try again.";
             } else {
-                toast({
-                    variant: "destructive",
-                    title: "Login Failed",
-                    description: "The email or password you entered is incorrect. Please try again.",
-                });
+                description = error.message;
             }
-            setIsLoading(false);
+            toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: description,
+            });
+        } finally {
+            setIsSigningIn(false);
         }
     };
+    
+    const handleEmailSignUp = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsSigningUp(true);
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            router.push('/');
+        } catch (error: any) {
+            let description = "An unexpected error occurred.";
+            if (error.code === 'auth/email-already-in-use') {
+                description = "An account with this email already exists. Please sign in.";
+            } else if (error.code === 'auth/weak-password') {
+                description = "The password is too weak. Please choose a stronger password.";
+            }
+             else {
+                description = error.message;
+            }
+            toast({
+                variant: "destructive",
+                title: "Sign-Up Failed",
+                description: description,
+            });
+        } finally {
+            setIsSigningUp(false);
+        }
+    };
+
 
     return (
         <div className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center">
@@ -92,7 +117,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleEmailSignIn}>
                     <CardContent className="grid gap-4">
-                        <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+                        <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isGoogleLoading || isSigningIn || isSigningUp}>
                             {isGoogleLoading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
@@ -124,10 +149,14 @@ export default function LoginPage() {
                             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                         </div>
                     </CardContent>
-                    <CardFooter>
-                        <Button className="w-full" type="submit" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In / Sign Up
+                    <CardFooter className="flex flex-col gap-2">
+                        <Button className="w-full" type="submit" disabled={isSigningIn || isSigningUp || isGoogleLoading}>
+                            {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign In
+                        </Button>
+                         <Button variant="outline" className="w-full" type="button" onClick={handleEmailSignUp} disabled={isSigningIn || isSigningUp || isGoogleLoading}>
+                            {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create Account
                         </Button>
                     </CardFooter>
                 </form>

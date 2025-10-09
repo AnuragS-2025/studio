@@ -6,6 +6,7 @@ import { collection, query, limit, orderBy, addDoc } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { Transaction, Investment, Budget, User } from './types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { subDays, format } from 'date-fns';
 
 // Mock data is kept for fallback or initial structure, but will be replaced by Firestore data.
 
@@ -14,21 +15,82 @@ const MOCK_USER: User = {
   email: 'as9771@srmist.edu.in',
 };
 
-export const MOCK_INVESTMENTS: Investment[] = [
-  { id: '1', name: 'Apple Inc.', symbol: 'AAPL', quantity: 10, price: 175.0, value: 1750.0, type: 'stock' },
-  { id: '2', name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, price: 68000.0, value: 34000.0, type: 'crypto' },
-  { id: '3', name: 'US Treasury Bond', symbol: 'US10Y', quantity: 5, price: 105.0, value: 525.0, type: 'bond' },
-  { id: '4', name: 'Tesla, Inc.', symbol: 'TSLA', quantity: 15, price: 180.0, value: 2700.0, type: 'stock' },
-  { id: '5', name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
+export const MOCK_INVESTMENTS: Omit<Investment, 'id'>[] = [
+  { name: 'Apple Inc.', symbol: 'AAPL', quantity: 10, price: 175.0, value: 1750.0, type: 'stock' },
+  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, price: 68000.0, value: 34000.0, type: 'crypto' },
+  { name: 'US Treasury Bond', symbol: 'US10Y', quantity: 5, price: 105.0, value: 525.0, type: 'bond' },
+  { name: 'Tesla, Inc.', symbol: 'TSLA', quantity: 15, price: 180.0, value: 2700.0, type: 'stock' },
+  { name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
 ];
 
-export const MOCK_BUDGETS: Budget[] = [
-  { id: '1', category: 'Food', limit: 500, spent: 320.50 },
-  { id: '2', category: 'Transport', limit: 200, spent: 110.75 },
-  { id: '3', category: 'Social', limit: 250, spent: 180.00 },
-  { id: '4', category: 'Utilities', limit: 150, spent: 125.40 },
-  { id: '5', category: 'Shopping', limit: 300, spent: 280.99 },
+export const MOCK_BUDGETS: Omit<Budget, 'id'>[] = [
+  { category: 'Food', limit: 500, spent: 320.50 },
+  { category: 'Transport', limit: 200, spent: 110.75 },
+  { category: 'Social', limit: 250, spent: 180.00 },
+  { category: 'Utilities', limit: 150, spent: 125.40 },
+  { category: 'Shopping', limit: 300, spent: 280.99 },
 ];
+
+const today = new Date();
+export const MOCK_TRANSACTIONS: Omit<Transaction, 'id'>[] = [
+    {
+        date: format(subDays(today, 1), 'yyyy-MM-dd'),
+        description: 'Monthly Salary',
+        amount: 5000,
+        type: 'income',
+        category: 'Salary'
+    },
+    {
+        date: format(subDays(today, 2), 'yyyy-MM-dd'),
+        description: 'Grocery Shopping',
+        amount: 75.5,
+        type: 'expense',
+        category: 'Food'
+    },
+    {
+        date: format(subDays(today, 3), 'yyyy-MM-dd'),
+        description: 'Train ticket',
+        amount: 25,
+        type: 'expense',
+        category: 'Transport'
+    },
+    {
+        date: format(subDays(today, 5), 'yyyy-MM-dd'),
+        description: 'Dinner with friends',
+        amount: 120,
+        type: 'expense',
+        category: 'Social'
+    },
+    {
+        date: format(subDays(today, 7), 'yyyy-MM-dd'),
+        description: 'Electricity Bill',
+        amount: 95,
+        type: 'expense',
+        category: 'Utilities'
+    },
+    {
+        date: format(subDays(today, 10), 'yyyy-MM-dd'),
+        description: 'New Jacket',
+        amount: 150,
+        type: 'expense',
+        category: 'Shopping'
+    },
+    {
+        date: format(subDays(today, 12), 'yyyy-MM-dd'),
+        description: 'Stock Investment',
+        amount: 500,
+        type: 'expense',
+        category: 'Investment'
+    },
+    {
+        date: format(subDays(today, 14), 'yyyy-MM-dd'),
+        description: 'Freelance Project Payment',
+        amount: 750,
+        type: 'income',
+        category: 'Freelance'
+    }
+];
+
 
 // --- Data Hooks ---
 
@@ -67,7 +129,7 @@ export const useInvestments = () => {
         user ? collection(firestore, 'users', user.uid, 'investments') : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Investment>(investmentsQuery);
-    return { investments: data ?? MOCK_INVESTMENTS, isLoading, error };
+    return { investments: data, isLoading, error };
 };
 
 export const useBudgets = () => {
@@ -77,7 +139,7 @@ export const useBudgets = () => {
         user ? collection(firestore, 'users', user.uid, 'budgets') : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Budget>(budgetsQuery);
-    return { budgets: data ?? MOCK_BUDGETS, isLoading, error };
+    return { budgets: data, isLoading, error };
 };
 
 

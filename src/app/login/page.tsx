@@ -20,7 +20,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { collection, addDoc } from "firebase/firestore";
-import { MOCK_BUDGETS, MOCK_INVESTMENTS } from "@/lib/data";
+import { MOCK_BUDGETS, MOCK_INVESTMENTS, MOCK_TRANSACTIONS } from "@/lib/data";
 
 export default function LoginPage() {
     const auth = useAuth();
@@ -38,17 +38,13 @@ export default function LoginPage() {
         
         const investmentsColRef = collection(firestore, 'users', userId, 'investments');
         const budgetsColRef = collection(firestore, 'users', userId, 'budgets');
+        const transactionsColRef = collection(firestore, 'users', userId, 'transactions');
 
-        const investmentPromises = MOCK_INVESTMENTS.map(investment => {
-            const { id, ...investmentData } = investment;
-            return addDoc(investmentsColRef, investmentData);
-        });
-        const budgetPromises = MOCK_BUDGETS.map(budget => {
-            const { id, ...budgetData } = budget;
-            return addDoc(budgetsColRef, budgetData);
-        });
+        const investmentPromises = MOCK_INVESTMENTS.map(investment => addDoc(investmentsColRef, investment));
+        const budgetPromises = MOCK_BUDGETS.map(budget => addDoc(budgetsColRef, budget));
+        const transactionPromises = MOCK_TRANSACTIONS.map(transaction => addDoc(transactionsColRef, transaction));
 
-        await Promise.all([...investmentPromises, ...budgetPromises]);
+        await Promise.all([...investmentPromises, ...budgetPromises, ...transactionPromises]);
     }
 
     const handleGoogleSignIn = async () => {

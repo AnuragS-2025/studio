@@ -44,6 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanBillForm } from "./expenses/scan-bill-form";
 import { AddExpenseForm } from "./expenses/add-expense-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 
 export default function Home() {
@@ -486,7 +487,7 @@ export default function Home() {
                     <TableBody>
                         {transactions?.map((transaction) => (
                         <TableRow key={transaction.id}>
-                            <TableCell className="hidden sm:table-cell">{transaction.date}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{format(new Date(transaction.date), 'PPP')}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
                             <TableCell>
                             <Badge variant="outline">{transaction.category}</Badge>

@@ -1,0 +1,278 @@
+/**
+ * @fileOverview
+ * This ruleset enforces a strict user-ownership model for all user-specific data within the WealthWise AI application.
+ *
+ * Data Structure:
+ * All user data is nested under `/users/{userId}`, ensuring that each user has a private data tree.
+ *  - `/users/{userId}/userProfiles/{userProfileId}`: User profile information.
+ *  - `/users/{userId}/investmentPortfolios/{investmentPortfolioId}`: Investment portfolios.
+ *  - `/users/{userId}/investmentPortfolios/{investmentPortfolioId}/investmentAssets/{investmentAssetId}`: Investment assets within portfolios.
+ *  - `/users/{userId}/expenseReports/{expenseReportId}`: Expense reports.
+ *  - `/users/{userId}/expenseTransactions/{expenseTransactionId}`: Expense transactions.
+ *  - `/users/{userId}/budgets/{budgetId}`: Budgets.
+ *  - `/users/{userId}/budgets/{budgetId}/budgetCategoryLimits/{budgetCategoryLimitId}`: Budget category limits.
+ *  - `/users/{userId}/financialGoals/{financialGoalId}`: Financial goals.
+ *
+ * Key Security Decisions:
+ * - **Strict Ownership**:  Only the authenticated user (`request.auth.uid`) can read or write data under their own `/users/{userId}` path.  No cross-user access is permitted.
+ * - **Expense Categories**: The `/expenseCategories` collection is publicly readable, as categories are assumed to be a shared resource.  Write access is not granted (and should be managed via other secured backend processes).
+ * - **No User Listing**: Listing all users is not permitted. This prevents potential information leakage.
+ *
+ * Denormalization for Authorization:
+ * To create simpler, more performant rules, always denormalize (copy) data required for an authorization decision directly onto the documents being secured. This avoids slow, costly, or impossible security checks.
+ *  - Example 1 (Avoiding `get()` calls): A `/tasks/{taskId}` rule that requires a `get()` on a separate `/projects/{projectId}` document just to check for ownership. This is slow and costly.
+ *  - Instead, a `/tasks/{taskId}` document should have a denormalized `ownerId` field directly on it, allowing for a fast, simple rule like `isOwner(resource.data.ownerId)` with no extra reads.
+ *  - Example 2 (Resource-Specific Roles): Avoid storing project roles in a separate `/memberships` collection. It's impossible for a rule on `/projects/{projectId}` to query the `memberships` collection to find a user's role.
+ *  - Instead, denormalize roles into a `members` map directly on the `/projects/{projectId}` document (e.g., `{ members: { 'user_abc': 'editor' } }`). This allows for a simple, powerful rule like `resource.data.members[request.auth.uid] == 'editor'`.
+ *
+ * Structural Segregation:
+ * When data can be both private and public (e.g., drafts vs. published content), prefer using separate collections (a private user subcollection and a public top-level collection). This pattern is more secure and performant for list operations than using a single collection with a boolean flag.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is made by an authenticated user.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId - The user ID to compare against the authenticated user ID.
+     * @returns {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID and the resource exists.
+     * @param {string} userId - The user ID to compare against the authenticated user ID.
+     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own UserProfile.
+     * @path /users/{userId}/userProfiles/{userProfileId}
+     * @allow (create) - User with ID 'user123' creates a new user profile with ID 'profile456' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/userProfiles/profile456'`
+     * @allow (get, list) - User with ID 'user123' reads their user profile with ID 'profile456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/userProfiles/profile456'`
+     * @allow (update, delete) - User with ID 'user123' updates their user profile with ID 'profile456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/userProfiles/profile456'`
+     * @deny (create) - User with ID 'user123' attempts to create a user profile with ID 'profile456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/userProfiles/profile456'`
+     * @deny (get, list) - User with ID 'user123' attempts to read a user profile with ID 'profile456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/userProfiles/profile456'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update a user profile with ID 'profile456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/userProfiles/profile456'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/userProfiles/{userProfileId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userProfileId;
+      allow update: if isExistingOwner(userId) && resource.data.id == userProfileId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own InvestmentPortfolio.
+     * @path /users/{userId}/investmentPortfolios/{investmentPortfolioId}
+     * @allow (create) - User with ID 'user123' creates a new investment portfolio with ID 'portfolio456' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456'`
+     * @allow (get, list) - User with ID 'user123' reads their investment portfolio with ID 'portfolio456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456'`
+     * @allow (update, delete) - User with ID 'user123' updates their investment portfolio with ID 'portfolio456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456'`
+     * @deny (create) - User with ID 'user123' attempts to create an investment portfolio with ID 'portfolio456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456'`
+     * @deny (get, list) - User with ID 'user123' attempts to read an investment portfolio with ID 'portfolio456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update an investment portfolio with ID 'portfolio456' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/investmentPortfolios/{investmentPortfolioId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == investmentPortfolioId;
+      allow update: if isExistingOwner(userId) && resource.data.id == investmentPortfolioId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own InvestmentAsset within their InvestmentPortfolio.
+     * @path /users/{userId}/investmentPortfolios/{investmentPortfolioId}/investmentAssets/{investmentAssetId}
+     * @allow (create) - User with ID 'user123' creates a new investment asset with ID 'asset789' under their investment portfolio 'portfolio456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @allow (get, list) - User with ID 'user123' reads their investment asset with ID 'asset789' within their investment portfolio 'portfolio456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @allow (update, delete) - User with ID 'user123' updates their investment asset with ID 'asset789' within their investment portfolio 'portfolio456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @deny (create) - User with ID 'user123' attempts to create an investment asset with ID 'asset789' under a different user's investment portfolio ('portfolio456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read an investment asset with ID 'asset789' within a different user's investment portfolio ('portfolio456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update an investment asset with ID 'asset789' within a different user's investment portfolio ('portfolio456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/investmentPortfolios/portfolio456/investmentAssets/asset789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/investmentPortfolios/{investmentPortfolioId}/investmentAssets/{investmentAssetId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == investmentAssetId;
+      allow update: if isExistingOwner(userId) && resource.data.id == investmentAssetId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own ExpenseReport.
+     * @path /users/{userId}/expenseReports/{expenseReportId}
+     * @allow (create) - User with ID 'user123' creates a new expense report with ID 'report789' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseReports/report789'`
+     * @allow (get, list) - User with ID 'user123' reads their expense report with ID 'report789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseReports/report789'`
+     * @allow (update, delete) - User with ID 'user123' updates their expense report with ID 'report789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseReports/report789'`
+     * @deny (create) - User with ID 'user123' attempts to create an expense report with ID 'report789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseReports/report789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read an expense report with ID 'report789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseReports/report789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update an expense report with ID 'report789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseReports/report789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/expenseReports/{expenseReportId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == expenseReportId;
+      allow update: if isExistingOwner(userId) && resource.data.id == expenseReportId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Expense categories are publicly readable, but only administrators can create, update, or delete them.
+     * @path /expenseCategories/{expenseCategoryId}
+     * @allow (get, list) - Any user can read the expense categories.
+     *  - Request: `auth.uid = null`, `path = '/expenseCategories/category123'`
+     * @deny (create, update, delete) - No one can create, update, or delete an expense category through the client (admin operations only).
+     *  - Request: `auth.uid = 'user123'`, `path = '/expenseCategories/category123'`
+     * @principle Publicly readable with restricted write access.
+     */
+    match /expenseCategories/{expenseCategoryId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own ExpenseTransaction.
+     * @path /users/{userId}/expenseTransactions/{expenseTransactionId}
+     * @allow (create) - User with ID 'user123' creates a new expense transaction with ID 'transaction789' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseTransactions/transaction789'`
+     * @allow (get, list) - User with ID 'user123' reads their expense transaction with ID 'transaction789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseTransactions/transaction789'`
+     * @allow (update, delete) - User with ID 'user123' updates their expense transaction with ID 'transaction789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/expenseTransactions/transaction789'`
+     * @deny (create) - User with ID 'user123' attempts to create an expense transaction with ID 'transaction789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseTransactions/transaction789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read an expense transaction with ID 'transaction789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseTransactions/transaction789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update an expense transaction with ID 'transaction789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/expenseTransactions/transaction789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/expenseTransactions/{expenseTransactionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == expenseTransactionId;
+      allow update: if isExistingOwner(userId) && resource.data.id == expenseTransactionId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own Budget.
+     * @path /users/{userId}/budgets/{budgetId}
+     * @allow (create) - User with ID 'user123' creates a new budget with ID 'budget789' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget789'`
+     * @allow (get, list) - User with ID 'user123' reads their budget with ID 'budget789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget789'`
+     * @allow (update, delete) - User with ID 'user123' updates their budget with ID 'budget789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget789'`
+     * @deny (create) - User with ID 'user123' attempts to create a budget with ID 'budget789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read a budget with ID 'budget789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update a budget with ID 'budget789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/budgets/{budgetId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == budgetId;
+      allow update: if isExistingOwner(userId) && resource.data.id == budgetId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own BudgetCategoryLimit within their Budget.
+     * @path /users/{userId}/budgets/{budgetId}/budgetCategoryLimits/{budgetCategoryLimitId}
+     * @allow (create) - User with ID 'user123' creates a new budget category limit with ID 'limit789' under their budget 'budget456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @allow (get, list) - User with ID 'user123' reads their budget category limit with ID 'limit789' within their budget 'budget456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @allow (update, delete) - User with ID 'user123' updates their budget category limit with ID 'limit789' within their budget 'budget456'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @deny (create) - User with ID 'user123' attempts to create a budget category limit with ID 'limit789' under a different user's budget ('budget456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read a budget category limit with ID 'limit789' within a different user's budget ('budget456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update a budget category limit with ID 'limit789' within a different user's budget ('budget456' under 'user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/budgets/budget456/budgetCategoryLimits/limit789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/budgets/{budgetId}/budgetCategoryLimits/{budgetCategoryLimitId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == budgetCategoryLimitId;
+      allow update: if isExistingOwner(userId) && resource.data.id == budgetCategoryLimitId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces document ownership: only the owner can read or write their own FinancialGoal.
+     * @path /users/{userId}/financialGoals/{financialGoalId}
+     * @allow (create) - User with ID 'user123' creates a new financial goal with ID 'goal789' under their user document.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/financialGoals/goal789'`
+     * @allow (get, list) - User with ID 'user123' reads their financial goal with ID 'goal789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/financialGoals/goal789'`
+     * @allow (update, delete) - User with ID 'user123' updates their financial goal with ID 'goal789'.
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user123/financialGoals/goal789'`
+     * @deny (create) - User with ID 'user123' attempts to create a financial goal with ID 'goal789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/financialGoals/goal789'`
+     * @deny (get, list) - User with ID 'user123' attempts to read a financial goal with ID 'goal789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/financialGoals/goal789'`
+     * @deny (update, delete) - User with ID 'user123' attempts to update a financial goal with ID 'goal789' under a different user's document ('user456').
+     *  - Request: `auth.uid = 'user123'`, `path = '/users/user456/financialGoals/goal789'`
+     * @principle Enforces strict document ownership based on the path.
+     */
+    match /users/{userId}/financialGoals/{financialGoalId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == financialGoalId;
+      allow update: if isExistingOwner(userId) && resource.data.id == financialGoalId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

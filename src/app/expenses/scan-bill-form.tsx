@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { scanBillAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,8 @@ export function ScanBillForm() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
 
   useEffect(() => {
     if (state.message === 'Validation failed' && state.errors) {
@@ -63,7 +65,8 @@ export function ScanBillForm() {
         description: `${state.data.description} for ₹${state.data.amount} has been added.`,
       });
       handleClose();
-    } else if (state.message && state.message !== 'Success') {
+      formRef.current?.reset();
+    } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -146,17 +149,6 @@ export function ScanBillForm() {
     }
   }
 
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const handleAction = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    if (preview) {
-        formData.set('photoDataUri', preview);
-    }
-    formAction(formData);
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -174,7 +166,8 @@ export function ScanBillForm() {
             Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} onSubmit={handleAction} className="space-y-4">
+        <form ref={formRef} action={formAction} className="space-y-4">
+            <input type="hidden" name="photoDataUri" value={preview || ''} />
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>
                 {isCameraOpen ? (

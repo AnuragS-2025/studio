@@ -3,7 +3,7 @@ import { Transaction, Investment, Budget, User } from './types';
 
 const user: User = {
   name: 'Anurag Sharan',
-  email: 'anurag.sharan@example.com',
+  email: 'as9771@srmist.edu.in',
 };
 
 const investments: Investment[] = [

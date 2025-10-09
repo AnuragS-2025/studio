@@ -14,7 +14,7 @@ const MOCK_USER: User = {
   email: 'as9771@srmist.edu.in',
 };
 
-const MOCK_INVESTMENTS: Investment[] = [
+export const MOCK_INVESTMENTS: Investment[] = [
   { id: '1', name: 'Apple Inc.', symbol: 'AAPL', quantity: 10, price: 175.0, value: 1750.0, type: 'stock' },
   { id: '2', name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, price: 68000.0, value: 34000.0, type: 'crypto' },
   { id: '3', name: 'US Treasury Bond', symbol: 'US10Y', quantity: 5, price: 105.0, value: 525.0, type: 'bond' },
@@ -22,7 +22,7 @@ const MOCK_INVESTMENTS: Investment[] = [
   { id: '5', name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
 ];
 
-const MOCK_BUDGETS: Budget[] = [
+export const MOCK_BUDGETS: Budget[] = [
   { id: '1', category: 'Food', limit: 500, spent: 320.50 },
   { id: '2', category: 'Transport', limit: 200, spent: 110.75 },
   { id: '3', category: 'Social', limit: 250, spent: 180.00 },
@@ -168,7 +168,7 @@ export const getMarketData = () => {
     ]},
     { name: 'BTC', value: 68000, change: 5.5, chartData: [
       { month: 'Jan', value: 60000 }, { month: 'Feb', value: 62000 }, { month: 'Mar', value: 65000 },
-      { month: 'Apr', value: 63000 }, { month: 'May', value: 67000 }, { month: 'Jun', value: 68000 },
+      { month: 'Apr', value: 63000 }, { month: 'May', avalue: 67000 }, { month: 'Jun', value: 68000 },
     ]},
     { name: 'ETH', value: 3500, change: 3.1, chartData: [
         { month: 'Jan', value: 3000 }, { month: 'Feb', value: 3100 }, { month: 'Mar', value: 3200 },

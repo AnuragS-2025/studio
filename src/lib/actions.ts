@@ -3,6 +3,8 @@
 
 import { aiFinancialAdvisor, AiFinancialAdvisorInput } from '@/ai/flows/ai-financial-advisor';
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
+import { scanBill } from '@/ai/flows/scan-bill-flow';
+import { ScanBillInputSchema, ScanBillOutputSchema } from '@/ai/schemas/scan-bill-schemas';
 import { z } from 'zod';
 
 const aiFinancialAdvisorSchema = z.object({
@@ -78,6 +80,58 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
     } catch (error) {
         return {
             message: 'An error occurred while getting recommendations.',
+            errors: null,
+            data: null,
+        };
+    }
+}
+
+
+const scanBillSchema = z.object({
+  billImage: z.any().refine(file => file.size > 0, 'Please upload an image.'),
+});
+
+function toDataURI(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+export async function scanBillAction(prevState: any, formData: FormData) {
+    const validatedFields = scanBillSchema.safeParse({
+        billImage: formData.get('billImage'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+            data: null,
+        };
+    }
+
+    try {
+        const file = formData.get('billImage') as File;
+        const photoDataUri = await toDataURI(file);
+        
+        const result = await scanBill({ photoDataUri });
+
+        // Here you would typically save the new transaction to your database
+        // For now, we'll just return the scanned data
+        console.log("Scanned bill data:", result);
+
+        return {
+            message: 'Success',
+            errors: null,
+            data: result,
+        };
+    } catch (error) {
+        console.error(error);
+        return {
+            message: 'An error occurred while scanning the bill.',
             errors: null,
             data: null,
         };

@@ -41,6 +41,7 @@ import { Area, AreaChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip } fr
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScanBillForm } from "./expenses/scan-bill-form";
 
 
 export default function Home() {
@@ -423,6 +424,17 @@ export default function Home() {
 
         {/* Expenses Section */}
         <section id="expenses" className="space-y-4">
+           <div className="flex items-center">
+            <div className="grid gap-2">
+                <h2 className="text-3xl font-bold tracking-tight">Expenses</h2>
+                <p className="text-muted-foreground">
+                    A detailed view of your spending.
+                </p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <ScanBillForm />
+            </div>
+          </div>
             <div className="grid gap-4 lg:grid-cols-5">
                 <Card className="lg:col-span-3">
                 <CardHeader>
@@ -548,5 +560,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

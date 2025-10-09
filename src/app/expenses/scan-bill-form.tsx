@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { scanBillAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,6 @@ export function ScanBillForm() {
   const [state, formAction] = useActionState(scanBillAction, initialState);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -105,7 +104,6 @@ export function ScanBillForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -125,13 +123,6 @@ export function ScanBillForm() {
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const dataUri = canvas.toDataURL('image/jpeg');
             setPreview(dataUri);
-
-            canvas.toBlob(blob => {
-                if (blob) {
-                    const capturedFile = new File([blob], "capture.jpg", { type: "image/jpeg" });
-                    setFile(capturedFile);
-                }
-            }, 'image/jpeg');
         }
         setIsCameraOpen(false);
     }
@@ -139,7 +130,6 @@ export function ScanBillForm() {
 
 
   const handleClose = () => {
-    setFile(null);
     setPreview(null);
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -150,7 +140,6 @@ export function ScanBillForm() {
   };
   
   const resetPreview = () => {
-    setFile(null);
     setPreview(null);
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -158,6 +147,15 @@ export function ScanBillForm() {
   }
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  const handleAction = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    if (preview) {
+        formData.set('photoDataUri', preview);
+    }
+    formAction(formData);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -176,7 +174,7 @@ export function ScanBillForm() {
             Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} action={formAction} className="space-y-4">
+        <form ref={formRef} onSubmit={handleAction} className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>
                 {isCameraOpen ? (
@@ -201,7 +199,7 @@ export function ScanBillForm() {
                         <div className="text-center">
                             <FileUp className="mx-auto h-10 w-10 text-muted-foreground" />
                             <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag & drop</p>
-                            <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
+                            <p className="text-xs text-muted-foreground">PNG or JPG</p>
                         </div>
                     </div>
                 ) : (
@@ -227,15 +225,16 @@ export function ScanBillForm() {
                     onChange={handleFileChange}
                     accept="image/png, image/jpeg" 
                 />
-                {state.errors?.billImage && <p className="text-sm text-destructive">{state.errors.billImage.join(', ')}</p>}
+                 {state.errors?.photoDataUri && <p className="text-sm text-destructive">{state.errors.photoDataUri.join(', ')}</p>}
             </div>
 
             <div className="flex justify-center items-center gap-2">
-                {!isCameraOpen ? (
-                    <Button type="button" variant="outline" onClick={() => setIsCameraOpen(true)} className="w-full">
+                {!isCameraOpen && !preview && (
+                     <Button type="button" variant="outline" onClick={() => setIsCameraOpen(true)} className="w-full">
                         <CameraIcon className="mr-2 h-4 w-4" /> Use Camera
                     </Button>
-                ) : (
+                )}
+                {isCameraOpen && (
                     <>
                         <Button type="button" variant="secondary" onClick={() => setIsCameraOpen(false)} className="w-full">
                             Close Camera

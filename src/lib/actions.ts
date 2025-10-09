@@ -87,22 +87,9 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
 }
 
 
-const scanBillSchema = z.object({
-  billImage: z.instanceof(File).refine(file => file && file.size > 0, 'Please upload or capture an image.'),
-});
-
-function toDataURI(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 export async function scanBillAction(prevState: any, formData: FormData) {
-    const validatedFields = scanBillSchema.safeParse({
-        billImage: formData.get('billImage'),
+    const validatedFields = ScanBillInputSchema.safeParse({
+        photoDataUri: formData.get('photoDataUri'),
     });
 
     if (!validatedFields.success) {
@@ -114,10 +101,7 @@ export async function scanBillAction(prevState: any, formData: FormData) {
     }
 
     try {
-        const file = formData.get('billImage') as File;
-        const photoDataUri = await toDataURI(file);
-        
-        const result = await scanBill({ photoDataUri });
+        const result = await scanBill({ photoDataUri: validatedFields.data.photoDataUri });
 
         // Here you would typically save the new transaction to your database
         // For now, we'll just return the scanned data

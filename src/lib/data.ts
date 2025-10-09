@@ -11,7 +11,7 @@ import { subDays, format } from 'date-fns';
 // Mock data is kept for fallback or initial structure, but will be replaced by Firestore data.
 
 const MOCK_USER: User = {
-  name: 'Anurag',
+  name: 'Anurag Sharan',
   email: 'as9771@srmist.edu.in',
 };
 

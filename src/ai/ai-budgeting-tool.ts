@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -44,7 +45,7 @@ const budgetingToolPrompt = ai.definePrompt({
   name: 'budgetingToolPrompt',
   input: {schema: BudgetingToolInputSchema},
   output: {schema: BudgetingToolOutputSchema},
-  prompt: `You are an AI financial advisor. Analyze the user's budget and provide personalized recommendations to optimize their spending and achieve their financial goals.
+  prompt: `You are an AI financial advisor. Analyze the user's budget and provide personalized recommendations to optimize their spending and achieve their financial goals. All financial figures are in Indian Rupees (₹). Do not use the dollar sign ($).
 
   Income: {{{income}}}
   Expenses:

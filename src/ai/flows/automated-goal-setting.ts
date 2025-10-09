@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -45,7 +46,7 @@ const prompt = ai.definePrompt({
   name: 'automatedGoalSettingPrompt',
   input: {schema: AutomatedGoalSettingInputSchema},
   output: {schema: AutomatedGoalSettingOutputSchema},
-  prompt: `You are a financial advisor providing advice to a user on how to achieve their financial goals.
+  prompt: `You are a financial advisor providing advice to a user on how to achieve their financial goals. All financial figures are in Indian Rupees (₹). Do not use the dollar sign ($).
 
   The user's goal is: {{goal}}
   Their current savings are: {{currentSavings}}

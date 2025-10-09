@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -42,7 +43,7 @@ const prompt = ai.definePrompt({
   name: 'aiFinancialAdvisorPrompt',
   input: {schema: AiFinancialAdvisorInputSchema},
   output: {schema: AiFinancialAdvisorOutputSchema},
-  prompt: `You are a financial advisor. Analyze the user's financial data and goals to provide personalized advice and insights.
+  prompt: `You are a financial advisor. Analyze the user's financial data and goals to provide personalized advice and insights. All financial figures are in Indian Rupees (₹). Do not use the dollar sign ($).
 
 Financial Data: {{{financialData}}}
 

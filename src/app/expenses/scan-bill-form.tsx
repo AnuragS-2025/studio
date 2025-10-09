@@ -21,7 +21,7 @@ const initialState = {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className="w-full">
+    <Button type="submit" disabled={pending || !document.forms.namedItem('scan-bill-form')?.querySelector<HTMLInputElement>('input[name="photoDataUri"]')?.value} className="w-full">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -60,11 +60,9 @@ export function ScanBillForm() {
     } else if (state.message === 'Success' && state.data) {
       toast({
         title: "Bill Scanned Successfully",
-        description: `${state.data.description} for ₹${state.data.amount} has been added.`,
+        description: `${state.data.description} for ₹${state.data.amount} has been added. Please reload to see the changes.`,
       });
       handleClose();
-      // Force a page reload to reflect the new transaction in the list
-      window.location.reload();
     } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",
@@ -165,7 +163,7 @@ export function ScanBillForm() {
             Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} name="scan-bill-form" className="space-y-4">
             <input type="hidden" name="photoDataUri" value={preview || ''} />
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>

@@ -14,7 +14,7 @@ const investments: Investment[] = [
   { id: '5', name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
 ];
 
-const transactions: Transaction[] = [
+let transactions: Transaction[] = [
   { id: '1', date: '2024-07-15', description: 'Monthly Salary', amount: 5000, type: 'income', category: 'Salary' },
   { id: '2', date: '2024-07-14', description: 'Grocery Shopping', amount: 150.75, type: 'expense', category: 'Food' },
   { id: '3', date: '2024-07-13', description: 'Stock Purchase - AAPL', amount: 875, type: 'expense', category: 'Investment' },
@@ -36,8 +36,12 @@ const budgets: Budget[] = [
 // Data access functions
 export const getUser = (): User => user;
 export const getInvestments = (): Investment[] => investments;
-export const getTransactions = (): Transaction[] => transactions;
+export const getTransactions = (): Transaction[] => transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 export const getBudgets = (): Budget[] => budgets;
+
+export const addTransaction = (transaction: Transaction) => {
+    transactions.unshift(transaction);
+};
 
 export const getPortfolioValue = (): number => {
   return investments.reduce((sum, investment) => sum + investment.value, 0);
@@ -56,7 +60,7 @@ export const getTotalExpenses = (): number => {
 };
 
 export const getRecentTransactions = (count: number): Transaction[] => {
-  return transactions.slice(0, count);
+  return getTransactions().slice(0, count);
 };
 
 export const getMarketData = () => {
@@ -101,9 +105,8 @@ export const getExpenseByCategoryData = () => {
         "hsl(26, 83%, 62%)",     // A softer orange
         "hsl(262.1 83.3% 57.8%)" // A deep purple
     ];
-    const categories = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))];
-
-    transactions
+    
+    getTransactions()
         .filter(t => t.type === 'expense')
         .forEach(t => {
             expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
@@ -115,7 +118,3 @@ export const getExpenseByCategoryData = () => {
       color: COLORS[index % COLORS.length]
     }));
 }
-
-    
-
-    

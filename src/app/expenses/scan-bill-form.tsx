@@ -5,13 +5,12 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { scanBillAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, FileUp, Loader2, ScanLine, X, CameraIcon, RefreshCw } from 'lucide-react';
+import { Camera, FileUp, Loader2, ScanLine, X, CameraIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const initialState = {
   message: '',
@@ -48,7 +47,6 @@ export function ScanBillForm() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
 
   useEffect(() => {
@@ -65,7 +63,6 @@ export function ScanBillForm() {
         description: `${state.data.description} for ₹${state.data.amount} has been added.`,
       });
       handleClose();
-      formRef.current?.reset();
     } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",
@@ -166,7 +163,7 @@ export function ScanBillForm() {
             Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-4">
             <input type="hidden" name="photoDataUri" value={preview || ''} />
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>
@@ -238,9 +235,9 @@ export function ScanBillForm() {
                     </>
                 )}
             </div>
-            <DialogFooter>
-                <SubmitButton />
-            </DialogFooter>
+            
+            <SubmitButton />
+
         </form>
       </DialogContent>
     </Dialog>

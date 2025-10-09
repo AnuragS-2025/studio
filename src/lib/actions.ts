@@ -4,7 +4,9 @@
 import { aiFinancialAdvisor, AiFinancialAdvisorInput } from '@/ai/flows/ai-financial-advisor';
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
 import { scanBill } from '@/ai/flows/scan-bill-flow';
-import { ScanBillInputSchema, ScanBillOutputSchema } from '@/ai/schemas/scan-bill-schemas';
+import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';
+import { addTransaction } from '@/lib/data';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const aiFinancialAdvisorSchema = z.object({
@@ -100,12 +102,27 @@ export async function scanBillAction(prevState: any, formData: FormData) {
         };
     }
 
+    if (!validatedFields.data.photoDataUri) {
+        return {
+            message: 'Validation failed',
+            errors: { photoDataUri: ['Please provide an image.'] },
+            data: null,
+        }
+    }
+
     try {
         const result = await scanBill({ photoDataUri: validatedFields.data.photoDataUri });
+        
+        addTransaction({
+            id: crypto.randomUUID(),
+            date: result.date,
+            description: result.description,
+            amount: result.amount,
+            type: 'expense',
+            category: result.category,
+        });
 
-        // Here you would typically save the new transaction to your database
-        // For now, we'll just return the scanned data
-        console.log("Scanned bill data:", result);
+        revalidatePath('/');
 
         return {
             message: 'Success',

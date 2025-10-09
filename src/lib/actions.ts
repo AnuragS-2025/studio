@@ -138,3 +138,49 @@ export async function scanBillAction(prevState: any, formData: FormData) {
         };
     }
 }
+
+const addExpenseSchema = z.object({
+    description: z.string().min(1, 'Description is required.'),
+    amount: z.coerce.number().min(0.01, 'Amount must be greater than 0.'),
+    date: z.string().min(1, 'Date is required.'),
+    category: z.enum(['Food', 'Transport', 'Social', 'Utilities', 'Shopping', 'Investment', 'Housing', 'Other']),
+});
+
+export async function addExpenseAction(prevState: any, formData: FormData) {
+    const validatedFields = addExpenseSchema.safeParse({
+        description: formData.get('description'),
+        amount: formData.get('amount'),
+        date: formData.get('date'),
+        category: formData.get('category'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+            data: null,
+        };
+    }
+    
+    const newTransaction = {
+        id: crypto.randomUUID(),
+        ...validatedFields.data,
+        type: 'expense' as const,
+    };
+
+    try {
+        addTransaction(newTransaction);
+        revalidatePath('/');
+        return {
+            message: 'Success',
+            errors: null,
+            data: newTransaction,
+        };
+    } catch (error) {
+        return {
+            message: 'An error occurred while adding the expense.',
+            errors: null,
+            data: null,
+        };
+    }
+}

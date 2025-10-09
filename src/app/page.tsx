@@ -42,6 +42,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanBillForm } from "./expenses/scan-bill-form";
+import { AddExpenseForm } from "./expenses/add-expense-form";
 
 
 export default function Home() {
@@ -439,6 +440,7 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <AddExpenseForm />
               <ScanBillForm />
             </div>
           </div>

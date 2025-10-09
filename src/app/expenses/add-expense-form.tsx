@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const initialState = {
   message: '',
@@ -37,6 +39,8 @@ function SubmitButton() {
 export function AddExpenseForm() {
   const [state, formAction] = useActionState(addExpenseAction, initialState);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -48,11 +52,22 @@ export function AddExpenseForm() {
         description: errorMessages,
       });
     } else if (state.message === 'Success' && state.data) {
-      toast({
-        title: "Expense Added",
-        description: `${state.data.description} for ₹${state.data.amount} has been added.`,
-      });
-      setOpen(false);
+        if (user) {
+            const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+            addDoc(transactionsColRef, { ...state.data, type: 'expense' }).then(() => {
+                 toast({
+                    title: "Expense Added",
+                    description: `${state.data.description} for ₹${state.data.amount} has been added.`,
+                });
+                setOpen(false);
+            }).catch((e) => {
+                 toast({
+                    variant: "destructive",
+                    title: "Error writing to database",
+                    description: e.message,
+                });
+            });
+        }
     } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",
@@ -60,7 +75,7 @@ export function AddExpenseForm() {
         description: state.message,
       });
     }
-  }, [state, toast]);
+  }, [state, toast, user, firestore]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -80,6 +95,7 @@ export function AddExpenseForm() {
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="userId" value={user?.uid || ''} />
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Input id="description" name="description" placeholder="e.g., Coffee with friend" />

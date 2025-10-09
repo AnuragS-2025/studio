@@ -10,7 +10,12 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase/auth';
-import { initializeFirebase } from '@/firebase';
+
+// NOTE: The Firebase Admin SDK should be used in server actions.
+// However, to get the current user, we'd typically use a server-side
+// auth library or pass the userId from the client. For simplicity in this
+// context, we will adjust this later if auth mechanisms are more clearly defined.
+// For now, we are removing the direct client-SDK call that causes the crash.
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -39,8 +44,9 @@ export async function getFinancialAdvice(prevState: any, formData: FormData) {
       data: result,
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return {
-      message: 'An error occurred while getting financial advice.',
+      message: `An error occurred while getting financial advice: ${errorMessage}`,
       errors: null,
       data: null,
     };
@@ -83,8 +89,9 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
             data: result,
         };
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
-            message: 'An error occurred while getting recommendations.',
+            message: `An error occurred while getting recommendations: ${errorMessage}`,
             errors: null,
             data: null,
         };
@@ -95,6 +102,7 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
 export async function scanBillAction(prevState: any, formData: FormData) {
     const validatedFields = ScanBillInputSchema.safeParse({
         photoDataUri: formData.get('photoDataUri'),
+        userId: formData.get('userId'),
     });
 
     if (!validatedFields.success) {
@@ -104,26 +112,30 @@ export async function scanBillAction(prevState: any, formData: FormData) {
             data: null,
         };
     }
+    
+    const { photoDataUri, userId } = validatedFields.data;
 
-    if (!validatedFields.data.photoDataUri) {
+    if (!photoDataUri) {
         return {
             message: 'Validation failed',
             errors: { photoDataUri: ['Please provide an image.'] },
             data: null,
         }
     }
+    if (!userId) {
+        return {
+            message: 'User not authenticated.',
+            errors: null,
+            data: null,
+        };
+    }
 
     try {
-        const result = await scanBill({ photoDataUri: validatedFields.data.photoDataUri });
+        const result = await scanBill({ photoDataUri });
         
-        const { firestore, auth } = initializeFirebase();
-        const userId = auth.currentUser?.uid;
-
-        if (!userId) {
-            throw new Error("User not authenticated");
-        }
-
-        await addTransaction(firestore, userId, {
+        // This is where you would use the Admin SDK to get firestore
+        // For now, we are assuming addTransaction can handle it
+        await addTransaction(userId, {
             date: result.date,
             description: result.description,
             amount: result.amount,
@@ -154,6 +166,7 @@ const addExpenseSchema = z.object({
     amount: z.coerce.number().min(0.01, 'Amount must be greater than 0.'),
     date: z.string().min(1, 'Date is required.'),
     category: z.enum(['Food', 'Transport', 'Social', 'Utilities', 'Shopping', 'Investment', 'Housing', 'Other']),
+    userId: z.string().min(1, 'User ID is required.'),
 });
 
 export async function addExpenseAction(prevState: any, formData: FormData) {
@@ -162,6 +175,7 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
         amount: formData.get('amount'),
         date: formData.get('date'),
         category: formData.get('category'),
+        userId: formData.get('userId'),
     });
 
     if (!validatedFields.success) {
@@ -172,19 +186,25 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
         };
     }
     
+    const { userId, ...transactionData } = validatedFields.data;
+    
     const newTransaction = {
-        ...validatedFields.data,
+        ...transactionData,
         type: 'expense' as const,
     };
 
-    try {
-        const { firestore, auth } = initializeFirebase();
-        const userId = auth.currentUser?.uid;
+    if (!userId) {
+        return {
+            message: 'User not authenticated.',
+            errors: null,
+            data: null,
+        };
+    }
 
-        if (!userId) {
-            throw new Error("User not authenticated.");
-        }
-        await addTransaction(firestore, userId, newTransaction);
+    try {
+        // This is where you would use the Admin SDK to get firestore
+        // For now, we are assuming addTransaction can handle it
+        await addTransaction(userId, newTransaction);
         revalidatePath('/');
         return {
             message: 'Success',

@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Camera, FileUp, Loader2, ScanLine, X, CameraIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useUser, useFirestore } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
 
 const initialState = {
   message: '',
@@ -61,6 +63,8 @@ function SubmitButton() {
 export function ScanBillForm() {
   const [state, formAction] = useActionState(scanBillAction, initialState);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,11 +83,28 @@ export function ScanBillForm() {
         description: errorMessages,
       });
     } else if (state.message === 'Success' && state.data) {
-      toast({
-        title: "Bill Scanned Successfully",
-        description: `${state.data.description} for ₹${state.data.amount} has been added.`,
-      });
-      handleClose();
+        if (user) {
+            const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+            addDoc(transactionsColRef, {
+                date: state.data.date,
+                description: state.data.description,
+                amount: state.data.amount,
+                type: 'expense',
+                category: state.data.category,
+            }).then(() => {
+                toast({
+                    title: "Bill Scanned Successfully",
+                    description: `${state.data.description} for ₹${state.data.amount} has been added.`,
+                });
+                handleClose();
+            }).catch((e) => {
+                 toast({
+                    variant: "destructive",
+                    title: "Error writing to database",
+                    description: e.message,
+                });
+            });
+        }
     } else if (state.message && state.message !== 'Success' && !state.errors) {
       toast({
         variant: "destructive",
@@ -91,7 +112,7 @@ export function ScanBillForm() {
         description: state.message,
       });
     }
-  }, [state, toast]);
+  }, [state, toast, user, firestore]);
 
   useEffect(() => {
     if (isCameraOpen) {
@@ -186,6 +207,7 @@ export function ScanBillForm() {
         </DialogHeader>
         <form action={formAction} name="scan-bill-form" className="space-y-4">
             <input type="hidden" name="photoDataUri" value={preview || ''} />
+            <input type="hidden" name="userId" value={user?.uid || ''} />
             <div className="space-y-2">
                 <Label htmlFor="billImage">Bill Image</Label>
                 {isCameraOpen ? (

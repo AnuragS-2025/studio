@@ -10,11 +10,11 @@ export function Overview() {
   const chartConfig = {
     income: {
       label: "Income",
-      color: "hsl(var(--accent))",
+      color: "hsl(var(--chart-2))",
     },
     expenses: {
       label: "Expenses",
-      color: "hsl(var(--primary))",
+      color: "hsl(var(--chart-1))",
     },
   };
 
@@ -33,7 +33,7 @@ export function Overview() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `₹${value}`}
         />
         <Tooltip
           cursor={false}
@@ -41,7 +41,7 @@ export function Overview() {
               formatter={(value, name) => (
                 <div className="flex flex-col">
                   <span className="capitalize text-muted-foreground">{name}</span>
-                  <span className="font-bold">${value.toLocaleString()}</span>
+                  <span className="font-bold">₹{Number(value).toLocaleString()}</span>
                 </div>
               )}
           />}
@@ -52,3 +52,5 @@ export function Overview() {
     </ChartContainer>
   )
 }
+
+    

@@ -59,7 +59,7 @@ export default function Home() {
       value: { label: "Value" },
       ...expenseByCategory.reduce((acc, cur) => ({
           ...acc,
-          [cur.name.toLowerCase()]: { label: cur.name, color: cur.color }
+          [cur.name.toLowerCase().replace(/ /g, '-')]: { label: cur.name, color: cur.color }
       }), {})
   };
 
@@ -79,7 +79,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${portfolioValue.toLocaleString()}
+                  ₹{portfolioValue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   +2.1% from last month
@@ -95,7 +95,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalIncome.toLocaleString()}
+                  ₹{totalIncome.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   This month
@@ -109,7 +109,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalExpenses.toLocaleString()}
+                  ₹{totalExpenses.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   This month
@@ -225,7 +225,7 @@ export default function Home() {
                           </div>
                         </TableCell>
                         <TableCell className={cn("text-right", transaction.type === 'income' ? 'text-green-500' : 'text-red-500')}>
-                          {transaction.type === 'expense' ? '-' : '+'}$
+                          {transaction.type === 'expense' ? '-' : '+'}₹
                           {transaction.amount.toFixed(2)}
                         </TableCell>
                       </TableRow>
@@ -243,7 +243,7 @@ export default function Home() {
             <div className="grid gap-2">
                 <h2 className="text-3xl font-bold tracking-tight">Portfolio</h2>
                 <p className="text-muted-foreground">
-                    Total Value: <span className="font-bold text-foreground">${portfolioValue.toLocaleString()}</span>
+                    Total Value: <span className="font-bold text-foreground">₹{portfolioValue.toLocaleString()}</span>
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -321,9 +321,9 @@ export default function Home() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{investment.quantity}</TableCell>
-                      <TableCell className="hidden md:table-cell">${investment.price.toFixed(2)}</TableCell>
+                      <TableCell className="hidden md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        ${investment.value.toLocaleString()}
+                        ₹{investment.value.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -353,7 +353,7 @@ export default function Home() {
                     </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">${stock.value.toLocaleString()}</div>
+                      <div className="text-2xl font-bold">₹{stock.value.toLocaleString()}</div>
                       <div className="h-[120px]">
                       <ChartContainer config={{value: {label: 'Value', color: stock.change > 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'}}} className="w-full h-full">
                             <AreaChart
@@ -370,7 +370,7 @@ export default function Home() {
                                     <ChartTooltipContent
                                     indicator="dot"
                                     hideLabel
-                                    formatter={(value) => `$${value}`}
+                                    formatter={(value) => `₹${value}`}
                                     />
                                 }
                                 />
@@ -409,7 +409,7 @@ export default function Home() {
                         .map((stock) => (
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
-                            <TableCell>${stock.value.toLocaleString()}</TableCell>
+                            <TableCell>₹{stock.value.toLocaleString()}</TableCell>
                             <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
                             {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
                             </TableCell>
@@ -450,7 +450,7 @@ export default function Home() {
                             <Badge variant="outline">{transaction.category}</Badge>
                             </TableCell>
                             <TableCell className={cn("text-right font-semibold", transaction.type === 'income' ? 'text-green-500' : '')}>
-                            {transaction.type === 'expense' ? '-' : '+'}$
+                            {transaction.type === 'expense' ? '-' : '+'}₹
                             {transaction.amount.toFixed(2)}
                             </TableCell>
                         </TableRow>
@@ -469,7 +469,7 @@ export default function Home() {
                       <PieChart>
                         <ChartTooltip
                           cursor={false}
-                          content={<ChartTooltipContent hideLabel />}
+                          content={<ChartTooltipContent hideLabel formatter={(value, name) => <span>{name}: ₹{Number(value).toLocaleString()}</span>} />}
                         />
                         <Pie
                           data={expenseByCategory}
@@ -478,8 +478,8 @@ export default function Home() {
                           innerRadius={60}
                           strokeWidth={5}
                         >
-                        {expenseByCategory.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                        {expenseByCategory.map((entry) => (
+                            <Cell key={`cell-${entry.name}`} fill={entry.color} />
                         ))}
                         </Pie>
                         <ChartLegend
@@ -511,7 +511,7 @@ export default function Home() {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{budget.category}</CardTitle>
                       <CardDescription>
-                        <span className="font-semibold">${budget.spent.toFixed(2)}</span> spent of ${budget.limit.toFixed(2)}
+                        <span className="font-semibold">₹{budget.spent.toFixed(2)}</span> spent of ₹{budget.limit.toFixed(2)}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -548,3 +548,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

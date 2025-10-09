@@ -57,17 +57,17 @@ export function GoalForm() {
           {state.errors?.timeHorizonYears && <p className="text-sm text-destructive">{state.errors.timeHorizonYears.join(', ')}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="currentSavings">Current Savings ($)</Label>
+          <Label htmlFor="currentSavings">Current Savings (₹)</Label>
           <Input id="currentSavings" name="currentSavings" type="number" placeholder="e.g., 20000" />
            {state.errors?.currentSavings && <p className="text-sm text-destructive">{state.errors.currentSavings.join(', ')}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="monthlyIncome">Monthly Income ($)</Label>
+          <Label htmlFor="monthlyIncome">Monthly Income (₹)</Label>
           <Input id="monthlyIncome" name="monthlyIncome" type="number" placeholder="e.g., 5000" />
            {state.errors?.monthlyIncome && <p className="text-sm text-destructive">{state.errors.monthlyIncome.join(', ')}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="monthlyExpenses">Monthly Expenses ($)</Label>
+          <Label htmlFor="monthlyExpenses">Monthly Expenses (₹)</Label>
           <Input id="monthlyExpenses" name="monthlyExpenses" type="number" placeholder="e.g., 3000" />
           {state.errors?.monthlyExpenses && <p className="text-sm text-destructive">{state.errors.monthlyExpenses.join(', ')}</p>}
         </div>
@@ -105,3 +105,5 @@ export function GoalForm() {
     </form>
   );
 }
+
+    

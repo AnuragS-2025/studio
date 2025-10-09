@@ -93,7 +93,13 @@ export const getExpenseChartData = () => {
 
 export const getExpenseByCategoryData = () => {
     const expenseByCategory: { [key: string]: number } = {};
-    const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+    const COLORS = [
+        "hsl(221.2 83.2% 53.3%)", // Primary
+        "hsl(145 58% 54%)",      // A nice green
+        "hsl(35, 91%, 60%)",     // A warm orange
+        "hsl(26, 83%, 62%)",     // A softer orange
+        "hsl(262.1 83.3% 57.8%)" // A deep purple
+    ];
     const categories = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))];
 
     transactions
@@ -108,3 +114,5 @@ export const getExpenseByCategoryData = () => {
       color: COLORS[index % COLORS.length]
     }));
 }
+
+    

@@ -88,7 +88,7 @@ export async function getGoalRecommendations(prevState: any, formData: FormData)
 
 
 const scanBillSchema = z.object({
-  billImage: z.any().refine(file => file && file.size > 0, 'Please upload or capture an image.'),
+  billImage: z.instanceof(File).refine(file => file && file.size > 0, 'Please upload or capture an image.'),
 });
 
 function toDataURI(file: File): Promise<string> {

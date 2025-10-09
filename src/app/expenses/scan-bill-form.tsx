@@ -105,13 +105,10 @@ export function ScanBillForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+      setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
-        
-        // Create a new File object to ensure the form state is updated correctly
-        const newFile = new File([selectedFile], selectedFile.name, { type: selectedFile.type });
-        setFile(newFile);
       };
       reader.readAsDataURL(selectedFile);
     }
@@ -160,20 +157,7 @@ export function ScanBillForm() {
     }
   }
 
-  const dataUrlToFile = async (dataUrl: string, fileName: string): Promise<File> => {
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    return new File([blob], fileName, { type: blob.type });
-  }
-
-  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    if (file) {
-      formData.set('billImage', file, file.name);
-    }
-    formAction(formData);
-  }
+  const formRef = useRef<HTMLFormElement>(null);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -192,77 +176,75 @@ export function ScanBillForm() {
             Upload or take a picture of your bill to automatically extract the details.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleFormSubmit}>
-            <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="billImage">Bill Image</Label>
-                    {isCameraOpen ? (
-                        <div className="space-y-2">
-                             <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                             {hasCameraPermission === false && (
-                                <Alert variant="destructive">
-                                    <CameraIcon className="h-4 w-4" />
-                                    <AlertTitle>Camera Access Denied</AlertTitle>
-                                    <AlertDescription>
-                                        Please grant camera permission in your browser settings to use this feature.
-                                    </AlertDescription>
-                                </Alert>
-                             )}
-                             <canvas ref={canvasRef} className="hidden" />
+        <form ref={formRef} action={formAction} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="billImage">Bill Image</Label>
+                {isCameraOpen ? (
+                    <div className="space-y-2">
+                         <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                         {hasCameraPermission === false && (
+                            <Alert variant="destructive">
+                                <CameraIcon className="h-4 w-4" />
+                                <AlertTitle>Camera Access Denied</AlertTitle>
+                                <AlertDescription>
+                                    Please grant camera permission in your browser settings to use this feature.
+                                </AlertDescription>
+                            </Alert>
+                         )}
+                         <canvas ref={canvasRef} className="hidden" />
+                    </div>
+                ) : !preview ? (
+                    <div 
+                        className="flex flex-col justify-center items-center w-full h-48 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <div className="text-center">
+                            <FileUp className="mx-auto h-10 w-10 text-muted-foreground" />
+                            <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag & drop</p>
+                            <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
                         </div>
-                    ) : !preview ? (
-                        <div 
-                            className="flex flex-col justify-center items-center w-full h-48 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
-                            onClick={() => fileInputRef.current?.click()}
+                    </div>
+                ) : (
+                    <div className="relative">
+                        <img src={preview} alt="Bill preview" className="w-full h-auto rounded-md" />
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6"
+                            onClick={resetPreview}
                         >
-                            <div className="text-center">
-                                <FileUp className="mx-auto h-10 w-10 text-muted-foreground" />
-                                <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag & drop</p>
-                                <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="relative">
-                            <img src={preview} alt="Bill preview" className="w-full h-auto rounded-md" />
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-2 right-2 h-6 w-6"
-                                onClick={resetPreview}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-                    <Input 
-                        id="billImage" 
-                        name="billImage"
-                        type="file" 
-                        className="hidden" 
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/png, image/jpeg" 
-                    />
-                    {state.errors?.billImage && <p className="text-sm text-destructive">{state.errors.billImage.join(', ')}</p>}
-                </div>
-
-                <div className="flex justify-center items-center gap-2">
-                    {!isCameraOpen ? (
-                        <Button type="button" variant="outline" onClick={() => setIsCameraOpen(true)} className="w-full">
-                            <CameraIcon className="mr-2 h-4 w-4" /> Use Camera
+                            <X className="h-4 w-4" />
                         </Button>
-                    ) : (
-                        <>
-                            <Button type="button" variant="secondary" onClick={() => setIsCameraOpen(false)} className="w-full">
-                                Close Camera
-                            </Button>
-                            <Button type="button" onClick={handleCapture} disabled={hasCameraPermission === false} className="w-full">
-                                <Camera className="mr-2 h-4 w-4" /> Capture
-                            </Button>
-                        </>
-                    )}
-                </div>
+                    </div>
+                )}
+                <Input 
+                    id="billImage" 
+                    name="billImage"
+                    type="file" 
+                    className="hidden" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/png, image/jpeg" 
+                />
+                {state.errors?.billImage && <p className="text-sm text-destructive">{state.errors.billImage.join(', ')}</p>}
+            </div>
+
+            <div className="flex justify-center items-center gap-2">
+                {!isCameraOpen ? (
+                    <Button type="button" variant="outline" onClick={() => setIsCameraOpen(true)} className="w-full">
+                        <CameraIcon className="mr-2 h-4 w-4" /> Use Camera
+                    </Button>
+                ) : (
+                    <>
+                        <Button type="button" variant="secondary" onClick={() => setIsCameraOpen(false)} className="w-full">
+                            Close Camera
+                        </Button>
+                        <Button type="button" onClick={handleCapture} disabled={hasCameraPermission === false} className="w-full">
+                            <Camera className="mr-2 h-4 w-4" /> Capture
+                        </Button>
+                    </>
+                )}
             </div>
             <DialogFooter>
                 <SubmitButton />

@@ -72,9 +72,7 @@ export default function LoginPage() {
         e.preventDefault();
         setIsSigningIn(true);
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            // Add sample data on sign-in for existing users who might not have it.
-            await addSampleData(userCredential.user.uid);
+            await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
         } catch (error: any) {
             let description = "An unexpected error occurred.";

@@ -1,523 +1,126 @@
+
 {
-  "entities": {
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Represents a user profile in the WealthWise AI application.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
+    "entities": {
+        "UserProfile": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "UserProfile",
+            "type": "object",
+            "description": "Represents a user profile in the WealthWise AI application.",
+            "properties": {
+                "displayName": {
+                    "type": "string",
+                    "description": "The display name of the user."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "The email address of the user.",
+                    "format": "email"
+                }
+            },
+            "required": ["displayName", "email"]
         },
-        "firstName": {
-          "type": "string",
-          "description": "The first name of the user."
+        "Transaction": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Transaction",
+            "type": "object",
+            "description": "Represents a single financial transaction.",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": "The date of the transaction in YYYY-MM-DD format.",
+                    "format": "date"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "A description of the transaction."
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "The amount of the transaction."
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["income", "expense"],
+                    "description": "The type of transaction."
+                },
+                "category": {
+                    "type": "string",
+                    "description": "The category of the transaction."
+                }
+            },
+            "required": ["date", "description", "amount", "type", "category"]
         },
-        "lastName": {
-          "type": "string",
-          "description": "The last name of the user."
+        "Investment": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Investment",
+            "type": "object",
+            "description": "Represents an individual asset within an investment portfolio.",
+            "properties": {
+                "name": { "type": "string" },
+                "symbol": { "type": "string" },
+                "quantity": { "type": "number" },
+                "price": { "type": "number" },
+                "value": { "type": "number" },
+                "type": { "type": "string", "enum": ["stock", "bond", "crypto"] }
+            },
+            "required": ["name", "symbol", "quantity", "price", "value", "type"]
         },
-        "email": {
-          "type": "string",
-          "description": "The email address of the user.",
-          "format": "email"
+        "Budget": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Budget",
+            "type": "object",
+            "description": "Represents a budget for a user.",
+            "properties": {
+                "category": { "type": "string" },
+                "limit": { "type": "number" },
+                "spent": { "type": "number" }
+            },
+            "required": ["category", "limit", "spent"]
         },
-        "dateOfBirth": {
-          "type": "string",
-          "description": "The date of birth of the user.",
-          "format": "date-time"
+        "FinancialGoal": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "FinancialGoal",
+            "type": "object",
+            "description": "Represents a financial goal set by a user.",
+            "properties": {
+                "goalName": { "type": "string" },
+                "targetAmount": { "type": "number" },
+                "targetDate": { "type": "string", "format": "date-time" },
+                "currentSavedAmount": { "type": "number" }
+            },
+            "required": ["goalName", "targetAmount", "targetDate"]
         }
-      },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email"
-      ]
     },
-    "InvestmentPortfolio": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "InvestmentPortfolio",
-      "type": "object",
-      "description": "Represents an investment portfolio for a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the InvestmentPortfolio entity."
-        },
-        "userProfileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N InvestmentPortfolio)"
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the investment portfolio."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the investment portfolio."
-        }
-      },
-      "required": [
-        "id",
-        "userProfileId",
-        "name"
-      ]
+    "auth": {
+        "providers": ["anonymous"]
     },
-    "InvestmentAsset": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "InvestmentAsset",
-      "type": "object",
-      "description": "Represents an individual asset within an investment portfolio.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the InvestmentAsset entity."
-        },
-        "investmentPortfolioId": {
-          "type": "string",
-          "description": "Reference to InvestmentPortfolio. (Relationship: InvestmentPortfolio 1:N InvestmentAsset)"
-        },
-        "assetType": {
-          "type": "string",
-          "description": "The type of asset (e.g., stock, bond, cryptocurrency)."
-        },
-        "assetSymbol": {
-          "type": "string",
-          "description": "The symbol or identifier of the asset (e.g., AAPL, BTC)."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "The quantity of the asset held."
-        },
-        "purchasePrice": {
-          "type": "number",
-          "description": "The price at which the asset was purchased."
-        },
-        "purchaseDate": {
-          "type": "string",
-          "description": "The date the asset was purchased.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "investmentPortfolioId",
-        "assetType",
-        "assetSymbol",
-        "quantity",
-        "purchasePrice",
-        "purchaseDate"
-      ]
-    },
-    "ExpenseReport": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ExpenseReport",
-      "type": "object",
-      "description": "Represents a monthly or yearly expense report for a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ExpenseReport entity."
-        },
-        "userProfileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N ExpenseReport)"
-        },
-        "reportType": {
-          "type": "string",
-          "description": "The type of report (e.g., monthly, yearly)."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The start date for the report period.",
-          "format": "date-time"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "The end date for the report period.",
-          "format": "date-time"
-        },
-        "totalExpenses": {
-          "type": "number",
-          "description": "The total expenses for the report period."
-        }
-      },
-      "required": [
-        "id",
-        "userProfileId",
-        "reportType",
-        "startDate",
-        "endDate",
-        "totalExpenses"
-      ]
-    },
-    "ExpenseCategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ExpenseCategory",
-      "type": "object",
-      "description": "Represents a category for expenses (e.g., food, rent, transportation).",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ExpenseCategory entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the expense category."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the expense category."
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
-    },
-    "ExpenseTransaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ExpenseTransaction",
-      "type": "object",
-      "description": "Represents an individual expense transaction.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ExpenseTransaction entity."
-        },
-        "userProfileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N ExpenseTransaction)"
-        },
-        "expenseCategoryId": {
-          "type": "string",
-          "description": "Reference to ExpenseCategory. (Relationship: ExpenseCategory 1:N ExpenseTransaction)"
-        },
-        "date": {
-          "type": "string",
-          "description": "The date of the expense transaction.",
-          "format": "date-time"
-        },
-        "amount": {
-          "type": "number",
-          "description": "The amount of the expense transaction."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the expense transaction."
-        }
-      },
-      "required": [
-        "id",
-        "userProfileId",
-        "expenseCategoryId",
-        "date",
-        "amount"
-      ]
-    },
-    "Budget": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Budget",
-      "type": "object",
-      "description": "Represents a budget for a user, defining spending limits for different categories.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Budget entity."
-        },
-        "userProfileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Budget)"
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the budget."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The start date for the budget period.",
-          "format": "date-time"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "The end date for the budget period.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userProfileId",
-        "name",
-        "startDate",
-        "endDate"
-      ]
-    },
-    "BudgetCategoryLimit": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BudgetCategoryLimit",
-      "type": "object",
-      "description": "Represents the spending limit for a specific expense category within a budget.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BudgetCategoryLimit entity."
-        },
-        "budgetId": {
-          "type": "string",
-          "description": "Reference to Budget. (Relationship: Budget 1:N BudgetCategoryLimit)"
-        },
-        "expenseCategoryId": {
-          "type": "string",
-          "description": "Reference to ExpenseCategory. (Relationship: ExpenseCategory 1:N BudgetCategoryLimit)"
-        },
-        "limit": {
-          "type": "number",
-          "description": "The spending limit for the category within the budget."
-        }
-      },
-      "required": [
-        "id",
-        "budgetId",
-        "expenseCategoryId",
-        "limit"
-      ]
-    },
-    "FinancialGoal": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FinancialGoal",
-      "type": "object",
-      "description": "Represents a financial goal set by a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the FinancialGoal entity."
-        },
-        "userProfileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N FinancialGoal)"
-        },
-        "goalName": {
-          "type": "string",
-          "description": "The name of the financial goal (e.g., retirement, home purchase)."
-        },
-        "targetAmount": {
-          "type": "number",
-          "description": "The target amount to be saved for the goal."
-        },
-        "targetDate": {
-          "type": "string",
-          "description": "The target date for achieving the goal.",
-          "format": "date-time"
-        },
-        "currentSavedAmount": {
-          "type": "number",
-          "description": "The current amount saved towards the goal."
-        }
-      },
-      "required": [
-        "id",
-        "userProfileId",
-        "goalName",
-        "targetAmount",
-        "targetDate"
-      ]
+    "firestore": {
+        "collections": [
+            {
+                "path": "/users/{userId}",
+                "schema": { "$ref": "#/entities/UserProfile" },
+                "description": "Stores user profile information."
+            },
+            {
+                "path": "/users/{userId}/transactions/{transactionId}",
+                "schema": { "$ref": "#/entities/Transaction" },
+                "description": "Stores all financial transactions for a user."
+            },
+            {
+                "path": "/users/{userId}/investments/{investmentId}",
+                "schema": { "$ref": "#/entities/Investment" },
+                "description": "Stores all investments for a user."
+            },
+            {
+                "path": "/users/{userId}/budgets/{budgetId}",
+                "schema": { "$ref": "#/entities/Budget" },
+                "description": "Stores all budgets for a user."
+            },
+            {
+                "path": "/users/{userId}/financialGoals/{goalId}",
+                "schema": { "$ref": "#/entities/FinancialGoal" },
+                "description": "Stores all financial goals for a user."
+            }
+        ]
     }
-  },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
-  },
-  "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}/userProfiles/{userProfileId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "userProfileId",
-              "description": "The unique identifier of the user profile."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/investmentPortfolios/{investmentPortfolioId}",
-        "definition": {
-          "entityName": "InvestmentPortfolio",
-          "schema": {
-            "$ref": "#/backend/entities/InvestmentPortfolio"
-          },
-          "description": "Stores investment portfolios for a user. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "investmentPortfolioId",
-              "description": "The unique identifier of the investment portfolio."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/investmentPortfolios/{investmentPortfolioId}/investmentAssets/{investmentAssetId}",
-        "definition": {
-          "entityName": "InvestmentAsset",
-          "schema": {
-            "$ref": "#/backend/entities/InvestmentAsset"
-          },
-          "description": "Stores investment assets within a portfolio. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "investmentPortfolioId",
-              "description": "The unique identifier of the investment portfolio."
-            },
-            {
-              "name": "investmentAssetId",
-              "description": "The unique identifier of the investment asset."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/expenseReports/{expenseReportId}",
-        "definition": {
-          "entityName": "ExpenseReport",
-          "schema": {
-            "$ref": "#/backend/entities/ExpenseReport"
-          },
-          "description": "Stores expense reports for a user. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "expenseReportId",
-              "description": "The unique identifier of the expense report."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/expenseCategories/{expenseCategoryId}",
-        "definition": {
-          "entityName": "ExpenseCategory",
-          "schema": {
-            "$ref": "#/backend/entities/ExpenseCategory"
-          },
-          "description": "Stores expense categories.  All documents in this collection share the same security requirements.",
-          "params": [
-            {
-              "name": "expenseCategoryId",
-              "description": "The unique identifier of the expense category."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/expenseTransactions/{expenseTransactionId}",
-        "definition": {
-          "entityName": "ExpenseTransaction",
-          "schema": {
-            "$ref": "#/backend/entities/ExpenseTransaction"
-          },
-          "description": "Stores expense transactions for a user. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "expenseTransactionId",
-              "description": "The unique identifier of the expense transaction."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/budgets/{budgetId}",
-        "definition": {
-          "entityName": "Budget",
-          "schema": {
-            "$ref": "#/backend/entities/Budget"
-          },
-          "description": "Stores budgets for a user. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "budgetId",
-              "description": "The unique identifier of the budget."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/budgets/{budgetId}/budgetCategoryLimits/{budgetCategoryLimitId}",
-        "definition": {
-          "entityName": "BudgetCategoryLimit",
-          "schema": {
-            "$ref": "#/backend/entities/BudgetCategoryLimit"
-          },
-          "description": "Stores budget category limits within a budget. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "budgetId",
-              "description": "The unique identifier of the budget."
-            },
-            {
-              "name": "budgetCategoryLimitId",
-              "description": "The unique identifier of the budget category limit."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/financialGoals/{financialGoalId}",
-        "definition": {
-          "entityName": "FinancialGoal",
-          "schema": {
-            "$ref": "#/backend/entities/FinancialGoal"
-          },
-          "description": "Stores financial goals for a user. Path-based ownership for private user data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "financialGoalId",
-              "description": "The unique identifier of the financial goal."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to store user profiles, investment portfolios, assets, expense reports, and financial goals for the WealthWise AI application. It uses path-based ownership for user-specific data, ensuring clear authorization and efficient data retrieval. Each user's data is stored under their unique user ID, enabling secure and scalable access control. The database design enforces Authorization Independence by avoiding hierarchical authorization dependencies. User profiles and associated financial data are structured to facilitate robust security rules and maintain data integrity. The use of dedicated collections for each entity simplifies rules and enhances debuggability. This design achieves Authorization Independence by relying solely on `request.auth.uid` for authorization, adhering to the DBAC principle, which is storing roles in the database. Each collection is segregated based on security posture to enable secure list operations."
-  }
 }

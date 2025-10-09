@@ -1,12 +1,20 @@
 
-import { Transaction, Investment, Budget, User } from './types';
+'use client';
 
-const user: User = {
+import { useMemo } from 'react';
+import { collection, query, limit, orderBy } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import type { Transaction, Investment, Budget, User } from './types';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
+// Mock data is kept for fallback or initial structure, but will be replaced by Firestore data.
+
+const MOCK_USER: User = {
   name: 'Anurag Sharan',
   email: 'as9771@srmist.edu.in',
 };
 
-const investments: Investment[] = [
+const MOCK_INVESTMENTS: Investment[] = [
   { id: '1', name: 'Apple Inc.', symbol: 'AAPL', quantity: 10, price: 175.0, value: 1750.0, type: 'stock' },
   { id: '2', name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, price: 68000.0, value: 34000.0, type: 'crypto' },
   { id: '3', name: 'US Treasury Bond', symbol: 'US10Y', quantity: 5, price: 105.0, value: 525.0, type: 'bond' },
@@ -14,18 +22,7 @@ const investments: Investment[] = [
   { id: '5', name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
 ];
 
-let transactions: Transaction[] = [
-  { id: '1', date: '2024-07-15', description: 'Monthly Salary', amount: 5000, type: 'income', category: 'Salary' },
-  { id: '2', date: '2024-07-14', description: 'Grocery Shopping', amount: 150.75, type: 'expense', category: 'Food' },
-  { id: '3', date: '2024-07-13', description: 'Stock Purchase - AAPL', amount: 875, type: 'expense', category: 'Investment' },
-  { id: '4', date: '2024-07-12', description: 'Dinner with friends', amount: 85.50, type: 'expense', category: 'Social' },
-  { id: '5', date: '2024-07-10', description: 'Rent', amount: 1200, type: 'expense', category: 'Housing' },
-  { id: '6', date: '2024-07-08', description: 'Internet Bill', amount: 60, type: 'expense', category: 'Utilities' },
-  { id: '7', date: '2024-07-05', description: 'Freelance Project', amount: 750, type: 'income', category: 'Freelance' },
-  { id: '8', date: '2024-06-30', description: 'Gasoline', amount: 50.25, type: 'expense', category: 'Transport' },
-];
-
-const budgets: Budget[] = [
+const MOCK_BUDGETS: Budget[] = [
   { id: '1', category: 'Food', limit: 500, spent: 320.50 },
   { id: '2', category: 'Transport', limit: 200, spent: 110.75 },
   { id: '3', category: 'Social', limit: 250, spent: 180.00 },
@@ -33,35 +30,119 @@ const budgets: Budget[] = [
   { id: '5', category: 'Shopping', limit: 300, spent: 280.99 },
 ];
 
-// Data access functions
-export const getUser = (): User => user;
-export const getInvestments = (): Investment[] => investments;
-export const getTransactions = (): Transaction[] => transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-export const getBudgets = (): Budget[] => budgets;
+// --- Data Hooks ---
 
-export const addTransaction = (transaction: Transaction) => {
-    transactions.unshift(transaction);
+export const useUserData = () => {
+  const { user } = useUser();
+  return useMemo(() => ({
+    user: user ? { name: user.displayName || 'Anonymous', email: user.email || '' } : MOCK_USER,
+  }), [user]);
 };
 
-export const getPortfolioValue = (): number => {
-  return investments.reduce((sum, investment) => sum + investment.value, 0);
+export const useTransactions = () => {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const transactionsQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc')) : null
+  , [firestore, user]);
+  const { data, isLoading, error } = useCollection<Transaction>(transactionsQuery);
+  return { transactions: data, isLoading, error };
 };
 
-export const getTotalIncome = (): number => {
-  return transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+export const useRecentTransactions = (count: number) => {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const recentTransactionsQuery = useMemoFirebase(() => 
+      user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc'), limit(count)) : null
+    , [firestore, user, count]);
+    const { data, isLoading, error } = useCollection<Transaction>(recentTransactionsQuery);
+    return { recentTransactions: data, isLoading, error };
+}
+
+
+export const useInvestments = () => {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const investmentsQuery = useMemoFirebase(() =>
+        user ? collection(firestore, 'users', user.uid, 'investments') : null
+    , [firestore, user]);
+    const { data, isLoading, error } = useCollection<Investment>(investmentsQuery);
+    return { investments: data ?? MOCK_INVESTMENTS, isLoading, error };
 };
 
-export const getTotalExpenses = (): number => {
-  return transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+export const useBudgets = () => {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const budgetsQuery = useMemoFirebase(() =>
+        user ? collection(firestore, 'users', user.uid, 'budgets') : null
+    , [firestore, user]);
+    const { data, isLoading, error } = useCollection<Budget>(budgetsQuery);
+    return { budgets: data ?? MOCK_BUDGETS, isLoading, error };
 };
 
-export const getRecentTransactions = (count: number): Transaction[] => {
-  return getTransactions().slice(0, count);
+
+// --- Data Calculation Hooks ---
+
+export const usePortfolioValue = (investments: Investment[] | null) => {
+    return useMemo(() => {
+        if (!investments) return 0;
+        return investments.reduce((sum, investment) => sum + investment.value, 0);
+    }, [investments]);
 };
+
+export const useTotalIncome = (transactions: Transaction[] | null) => {
+    return useMemo(() => {
+        if (!transactions) return 0;
+        return transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+    }, [transactions]);
+};
+
+export const useTotalExpenses = (transactions: Transaction[] | null) => {
+    return useMemo(() => {
+        if (!transactions) return 0;
+        return transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+    }, [transactions]);
+};
+
+export const useExpenseByCategoryData = (transactions: Transaction[] | null) => {
+    return useMemo(() => {
+        if (!transactions) return [];
+        const expenseByCategory: { [key: string]: number } = {};
+        const COLORS = [
+            "hsl(221.2 83.2% 53.3%)", // Primary
+            "hsl(145 58% 54%)",      // A nice green
+            "hsl(35, 91%, 60%)",     // A warm orange
+            "hsl(26, 83%, 62%)",     // A softer orange
+            "hsl(262.1 83.3% 57.8%)" // A deep purple
+        ];
+        
+        transactions
+            .filter(t => t.type === 'expense')
+            .forEach(t => {
+                expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+            });
+
+        return Object.entries(expenseByCategory).map(([name, value], index) => ({
+          name,
+          value,
+          color: COLORS[index % COLORS.length]
+        }));
+    }, [transactions]);
+}
+
+
+// --- Firestore Write Operations ---
+export const addTransaction = (firestore: any, userId: string, transaction: Omit<Transaction, 'id'>) => {
+    const transactionsColRef = collection(firestore, 'users', userId, 'transactions');
+    return addDocumentNonBlocking(transactionsColRef, transaction);
+};
+
+
+// --- Mock Data for Components that are not yet migrated ---
 
 export const getMarketData = () => {
   return [
@@ -94,27 +175,4 @@ export const getExpenseChartData = () => {
       { name: "Jun", income: 2390, expenses: 3800 },
       { name: "Jul", income: 3490, expenses: 4300 },
     ]
-}
-
-export const getExpenseByCategoryData = () => {
-    const expenseByCategory: { [key: string]: number } = {};
-    const COLORS = [
-        "hsl(221.2 83.2% 53.3%)", // Primary
-        "hsl(145 58% 54%)",      // A nice green
-        "hsl(35, 91%, 60%)",     // A warm orange
-        "hsl(26, 83%, 62%)",     // A softer orange
-        "hsl(262.1 83.3% 57.8%)" // A deep purple
-    ];
-    
-    getTransactions()
-        .filter(t => t.type === 'expense')
-        .forEach(t => {
-            expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
-        });
-
-    return Object.entries(expenseByCategory).map(([name, value], index) => ({
-      name,
-      value,
-      color: COLORS[index % COLORS.length]
-    }));
 }

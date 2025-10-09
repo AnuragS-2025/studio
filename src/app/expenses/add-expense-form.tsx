@@ -50,7 +50,7 @@ export function AddExpenseForm() {
     } else if (state.message === 'Success' && state.data) {
       toast({
         title: "Expense Added",
-        description: `${state.data.description} for ₹${state.data.amount} has been added. Please reload to see the changes.`,
+        description: `${state.data.description} for ₹${state.data.amount} has been added.`,
       });
       setOpen(false);
     } else if (state.message && state.message !== 'Success' && !state.errors) {

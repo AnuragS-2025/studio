@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/overview";
-import { getPortfolioValue, getRecentTransactions, getTotalExpenses, getTotalIncome, getUser, getInvestments, getMarketData, getTransactions, getExpenseByCategoryData, getBudgets } from "@/lib/data";
+import { useBudgets, useExpenseByCategoryData, useInvestments, usePortfolioValue, useRecentTransactions, useTotalExpenses, useTotalIncome, useTransactions, useUserData, getMarketData, getExpenseChartData } from "@/lib/data";
 import { AdvisorForm } from "@/app/advisor/advisor-form";
 import { GoalForm } from "@/app/goals/goal-form";
 import { Badge } from "@/components/ui/badge";
@@ -43,19 +43,22 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanBillForm } from "./expenses/scan-bill-form";
 import { AddExpenseForm } from "./expenses/add-expense-form";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function Home() {
-  const portfolioValue = getPortfolioValue();
-  const totalIncome = getTotalIncome();
-  const totalExpenses = getTotalExpenses();
-  const user = getUser();
-  const recentTransactions = getRecentTransactions(5);
-  const investments = getInvestments();
+  const { user } = useUserData();
+  const { transactions, isLoading: transactionsLoading } = useTransactions();
+  const { recentTransactions, isLoading: recentTransactionsLoading } = useRecentTransactions(5);
+  const { investments, isLoading: investmentsLoading } = useInvestments();
+  const { budgets, isLoading: budgetsLoading } = useBudgets();
+
+  const portfolioValue = usePortfolioValue(investments);
+  const totalIncome = useTotalIncome(transactions);
+  const totalExpenses = useTotalExpenses(transactions);
+  const expenseByCategory = useExpenseByCategoryData(transactions);
+
   const marketData = getMarketData();
-  const transactions = getTransactions();
-  const expenseByCategory = getExpenseByCategoryData();
-  const budgets = getBudgets();
 
   const expenseChartConfig = {
       value: { label: "Value" },
@@ -87,9 +90,7 @@ export default function Home() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  ₹{portfolioValue.toLocaleString()}
-                </div>
+                {investmentsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{portfolioValue.toLocaleString()}</div>}
                 <p className="text-xs text-muted-foreground">
                   +2.1% from last month
                 </p>
@@ -103,9 +104,7 @@ export default function Home() {
                 <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  ₹{totalIncome.toLocaleString()}
-                </div>
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString()}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -117,9 +116,7 @@ export default function Home() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  ₹{totalExpenses.toLocaleString()}
-                </div>
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString()}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -217,6 +214,13 @@ export default function Home() {
                 </Button>
               </CardHeader>
               <CardContent>
+                {recentTransactionsLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -225,7 +229,7 @@ export default function Home() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentTransactions.map((transaction) => (
+                    {recentTransactions?.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
                           <div className="font-medium">{transaction.description}</div>
@@ -241,6 +245,7 @@ export default function Home() {
                     ))}
                   </TableBody>
                 </Table>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -301,6 +306,13 @@ export default function Home() {
           </div>
           <Card>
             <CardContent className="p-0">
+              {investmentsLoading ? (
+                <div className="space-y-2 p-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -312,7 +324,7 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {investments.map((investment) => (
+                  {investments?.map((investment) => (
                     <TableRow key={investment.id}>
                       <TableCell>
                         <div className="font-medium">{investment.name}</div>
@@ -338,6 +350,7 @@ export default function Home() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </section>
@@ -453,6 +466,14 @@ export default function Home() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
+                  {transactionsLoading ? (
+                     <div className="space-y-2 p-4">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                     </div>
+                  ) : (
                     <Table>
                     <TableHeader>
                         <TableRow>
@@ -463,7 +484,7 @@ export default function Home() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.map((transaction) => (
+                        {transactions?.map((transaction) => (
                         <TableRow key={transaction.id}>
                             <TableCell className="hidden sm:table-cell">{transaction.date}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
@@ -478,6 +499,7 @@ export default function Home() {
                         ))}
                     </TableBody>
                     </Table>
+                  )}
                 </CardContent>
                 </Card>
                 <Card className="lg:col-span-2">
@@ -486,6 +508,7 @@ export default function Home() {
                         <CardDescription>A breakdown of your spending this month.</CardDescription>
                     </CardHeader>
                     <CardContent>
+                    {transactionsLoading ? <Skeleton className="h-[300px] w-full" /> : (
                     <ChartContainer config={expenseChartConfig} className="mx-auto aspect-square max-h-[300px]">
                       <PieChart>
                         <ChartTooltip
@@ -509,6 +532,7 @@ export default function Home() {
                         />
                       </PieChart>
                     </ChartContainer>
+                    )}
                     </CardContent>
                 </Card>
             </div>
@@ -525,7 +549,13 @@ export default function Home() {
               </CardHeader>
             </Card>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {budgets.map((budget) => {
+              {budgetsLoading ? (
+                <>
+                  <Skeleton className="h-36 w-full" />
+                  <Skeleton className="h-36 w-full" />
+                  <Skeleton className="h-36 w-full" />
+                </>
+              ) : budgets?.map((budget) => {
                 const progress = (budget.spent / budget.limit) * 100;
                 return (
                   <Card key={budget.id}>

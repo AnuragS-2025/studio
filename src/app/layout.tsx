@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -5,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { Header } from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { AuthInitializer } from "@/components/auth-initializer";
 
 const font = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -32,13 +35,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster />
-          <div className="flex min-h-screen w-full flex-col">
-            <Header />
-            <main className="flex flex-1 flex-col gap-4 bg-background p-4 md:gap-8 md:p-8">
-              {children}
-            </main>
-          </div>
+          <FirebaseClientProvider>
+            <AuthInitializer />
+            <Toaster />
+            <div className="flex min-h-screen w-full flex-col">
+              <Header />
+              <main className="flex flex-1 flex-col gap-4 bg-background p-4 md:gap-8 md:p-8">
+                {children}
+              </main>
+            </div>
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

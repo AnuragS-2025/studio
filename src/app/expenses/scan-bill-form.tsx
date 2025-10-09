@@ -20,8 +20,29 @@ const initialState = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const [hasValue, setHasValue] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const checkValue = () => {
+        const form = formRef.current?.closest('form');
+        if(form) {
+            const hiddenInput = form.querySelector<HTMLInputElement>('input[name="photoDataUri"]');
+            setHasValue(!!hiddenInput?.value);
+        }
+    }
+    const observer = new MutationObserver(checkValue)
+    const form = formRef.current?.closest('form');
+    if (form) {
+        observer.observe(form, { attributes: true, childList: true, subtree: true });
+    }
+    checkValue(); // Initial check
+    return () => observer.disconnect();
+  }, []);
+
+
   return (
-    <Button type="submit" disabled={pending || !document.forms.namedItem('scan-bill-form')?.querySelector<HTMLInputElement>('input[name="photoDataUri"]')?.value} className="w-full">
+    <Button ref={formRef} type="submit" disabled={pending || !hasValue} className="w-full">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -60,7 +81,7 @@ export function ScanBillForm() {
     } else if (state.message === 'Success' && state.data) {
       toast({
         title: "Bill Scanned Successfully",
-        description: `${state.data.description} for ₹${state.data.amount} has been added. Please reload to see the changes.`,
+        description: `${state.data.description} for ₹${state.data.amount} has been added.`,
       });
       handleClose();
     } else if (state.message && state.message !== 'Success' && !state.errors) {
@@ -156,7 +177,7 @@ export function ScanBillForm() {
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} onCloseAutoFocus={handleClose}>
+      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => { if(isCameraOpen) e.preventDefault()}} onCloseAutoFocus={handleClose}>
         <DialogHeader>
           <DialogTitle>Scan a Bill or Receipt</DialogTitle>
           <DialogDescription>

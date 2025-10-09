@@ -8,6 +8,9 @@ import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';
 import { addTransaction } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase/auth';
+import { initializeFirebase } from '@/firebase';
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -113,8 +116,14 @@ export async function scanBillAction(prevState: any, formData: FormData) {
     try {
         const result = await scanBill({ photoDataUri: validatedFields.data.photoDataUri });
         
-        addTransaction({
-            id: crypto.randomUUID(),
+        const { firestore, auth } = initializeFirebase();
+        const userId = auth.currentUser?.uid;
+
+        if (!userId) {
+            throw new Error("User not authenticated");
+        }
+
+        await addTransaction(firestore, userId, {
             date: result.date,
             description: result.description,
             amount: result.amount,
@@ -131,8 +140,9 @@ export async function scanBillAction(prevState: any, formData: FormData) {
         };
     } catch (error) {
         console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
-            message: 'An error occurred while scanning the bill.',
+            message: `An error occurred while scanning the bill: ${errorMessage}`,
             errors: null,
             data: null,
         };
@@ -163,13 +173,18 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
     }
     
     const newTransaction = {
-        id: crypto.randomUUID(),
         ...validatedFields.data,
         type: 'expense' as const,
     };
 
     try {
-        addTransaction(newTransaction);
+        const { firestore, auth } = initializeFirebase();
+        const userId = auth.currentUser?.uid;
+
+        if (!userId) {
+            throw new Error("User not authenticated.");
+        }
+        await addTransaction(firestore, userId, newTransaction);
         revalidatePath('/');
         return {
             message: 'Success',
@@ -177,8 +192,9 @@ export async function addExpenseAction(prevState: any, formData: FormData) {
             data: newTransaction,
         };
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
-            message: 'An error occurred while adding the expense.',
+            message: `An error occurred while adding the expense: ${errorMessage}`,
             errors: null,
             data: null,
         };

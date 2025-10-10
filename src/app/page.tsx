@@ -50,6 +50,7 @@ import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
+import { Icons } from "@/components/icons";
 
 
 export default function Home() {
@@ -164,14 +165,11 @@ export default function Home() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Welcome Back</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Market Sentiment</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{user.name}</div>
-                <p className="text-xs text-muted-foreground">
-                  Here's your financial snapshot
-                </p>
+              <CardContent className="flex items-center justify-center">
+                 <Icons.bull className="h-16 w-16 text-green-500 animate-breath" />
               </CardContent>
             </Card>
           </div>

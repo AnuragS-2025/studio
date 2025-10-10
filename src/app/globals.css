@@ -164,4 +164,16 @@ body {
     .dark .bg-gradient-primary-accent {
         @apply bg-gradient-to-br from-primary/10 via-background to-accent/10;
     }
+    .animate-breath {
+        animation: breath 3s ease-in-out infinite;
+    }
+}
+
+@keyframes breath {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }

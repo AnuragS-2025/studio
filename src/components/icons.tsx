@@ -42,4 +42,26 @@ export const Icons = {
       <path d="M1 1h22v22H1z" fill="none" />
     </svg>
   ),
+  bull: (props: SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+        <path d="M16 8h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/>
+        <path d="M8 8H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"/>
+        <path d="M12.5 4C11.5 4 11 5 11 6v2"/>
+        <path d="M11.5 4C12.5 4 13 5 13 6v2"/>
+        <path d="M18 12c0-4.418-1.79-8-4-8s-4 3.582-4 8"/>
+        <path d="M12 12v4c0 2 2 4 4 4h2"/>
+        <path d="M12 12v4c0 2-2 4-4 4H6"/>
+        <path d="M12 12a3 3 0 0 1 3-3h1"/>
+        <path d="M12 12a3 3 0 0 0-3 3v1"/>
+    </svg>
+  ),
 };

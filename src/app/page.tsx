@@ -289,13 +289,13 @@ export default function Home() {
                 <TableBody>
                   {investments?.map((investment) => (
                     <TableRow key={investment.id}>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <div className="font-medium">{investment.name}</div>
                         <div className="text-sm text-muted-foreground">
                           {investment.symbol}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <Badge variant="outline" className={cn(
                             investment.type === 'stock' && 'border-sky-500 text-sky-500',
                             investment.type === 'crypto' && 'border-amber-500 text-amber-500',
@@ -304,12 +304,12 @@ export default function Home() {
                           {investment.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{investment.quantity}</TableCell>
-                      <TableCell className="hidden md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="hidden align-middle md:table-cell">{investment.quantity}</TableCell>
+                      <TableCell className="hidden align-middle md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold align-middle">
                         ₹{investment.value.toLocaleString('en-IN')}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right align-middle">
                         <RemoveInvestmentButton investmentId={investment.id} />
                       </TableCell>
                     </TableRow>

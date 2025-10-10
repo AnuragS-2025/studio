@@ -278,14 +278,14 @@ export const getMarketData = () => {
   return [
     { name: 'Reliance Industries', value: 2950, change: 1.2, chartData: generateChartData(2950) },
     { name: 'Tata Consultancy', value: 3850, change: -0.5, chartData: generateChartData(3850) },
-    { name: 'HDFC Bank', value: 1680, change: 2.1, chartData: generateChartData(1680) },
-    { name: 'Infosys', value: 1550, change: -1.8, chartData: generateChartData(1550) },
+    { name: 'HDFC Bank', value: 981, change: 2.1, chartData: generateChartData(981) },
+    { name: 'Infosys', value: 1511, change: -1.8, chartData: generateChartData(1511) },
     { name: 'ICICI Bank', value: 1100, change: 0.8, chartData: generateChartData(1100) },
     { name: 'Bharti Airtel', value: 1200, change: -1.1, chartData: generateChartData(1200) },
-    { name: 'State Bank of India', value: 780, change: 2.5, chartData: generateChartData(780) },
+    { name: 'State Bank of India', value: 881, change: 2.5, chartData: generateChartData(881) },
     { name: 'Larsen & Toubro', value: 3600, change: 0.3, chartData: generateChartData(3600) },
     { name: 'Hindustan Unilever', value: 2500, change: -0.2, chartData: generateChartData(2500) },
-    { name: 'ITC', value: 430, change: 1.5, chartData: generateChartData(430) },
+    { name: 'ITC', value: 402, change: 1.5, chartData: generateChartData(402) },
   ];
 };
 
@@ -306,4 +306,5 @@ export const getExpenseChartData = () => {
     
 
     
+
 

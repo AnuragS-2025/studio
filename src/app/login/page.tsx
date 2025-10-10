@@ -147,29 +147,6 @@ export default function LoginPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                    <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isGoogleLoading || isSigningIn || isSigningUp}>
-                        {isGoogleLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
-                                <path
-                                    fill="currentColor"
-                                    d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.66 1.67-3.86 0-6.99-3.14-6.99-7s3.13-7 6.99-7c2.03 0 3.36.79 4.31 1.74l2.77-2.77C18.04 2.45 15.51 1 12.48 1 5.88 1 1 5.98 1 12.5s4.88 11.5 11.48 11.5c3.54 0 6.1-1.23 8.04-3.1 2.02-1.95 2.6-4.82 2.6-7.39 0-.6-.05-1.19-.16-1.74Z"
-                                ></path>
-                            </svg>
-                        )}
-                        Continue with Google
-                    </Button>
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                            </span>
-                        </div>
-                    </div>
                     <form onSubmit={handleEmailSignIn}>
                         <div className="grid gap-4">
                             <div className="grid gap-2">
@@ -188,6 +165,16 @@ export default function LoginPage() {
                     </form>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
+                    <div className="relative w-full">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                            No account?
+                            </span>
+                        </div>
+                    </div>
                     <Button variant="outline" className="w-full" type="button" onClick={handleEmailSignUp} disabled={isSigningIn || isSigningUp || isGoogleLoading}>
                         {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create Account

@@ -93,7 +93,7 @@ export default function Home() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {investmentsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{portfolioValue.toLocaleString()}</div>}
+                {investmentsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{portfolioValue.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   +2.1% from last month
                 </p>
@@ -107,7 +107,7 @@ export default function Home() {
                 <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString()}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -119,7 +119,7 @@ export default function Home() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString()}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -260,7 +260,7 @@ export default function Home() {
             <div className="grid gap-2">
                 <h2 className="text-3xl font-bold tracking-tight">Portfolio</h2>
                 <p className="text-muted-foreground">
-                    Total Value: <span className="font-bold text-foreground">₹{portfolioValue.toLocaleString()}</span>
+                    Total Value: <span className="font-bold text-foreground">₹{portfolioValue.toLocaleString('en-IN')}</span>
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -347,7 +347,7 @@ export default function Home() {
                       <TableCell className="hidden md:table-cell">{investment.quantity}</TableCell>
                       <TableCell className="hidden md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        ₹{investment.value.toLocaleString()}
+                        ₹{investment.value.toLocaleString('en-IN')}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -378,7 +378,7 @@ export default function Home() {
                     </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">₹{stock.value.toLocaleString()}</div>
+                      <div className="text-2xl font-bold">₹{stock.value.toLocaleString('en-IN')}</div>
                       <div className="h-[120px]">
                       <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
                             <AreaChart
@@ -434,7 +434,7 @@ export default function Home() {
                         .map((stock) => (
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
-                            <TableCell>₹{stock.value.toLocaleString()}</TableCell>
+                            <TableCell>₹{stock.value.toLocaleString('en-IN')}</TableCell>
                             <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
                             {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
                             </TableCell>
@@ -521,7 +521,7 @@ export default function Home() {
                       <PieChart>
                         <ChartTooltip
                           cursor={false}
-                          content={<ChartTooltipContent hideLabel formatter={(value, name) => <span>{name}: ₹{Number(value).toLocaleString()}</span>} />}
+                          content={<ChartTooltipContent hideLabel formatter={(value, name) => <span>{name}: ₹{Number(value).toLocaleString('en-IN')}</span>} />}
                         />
                         <Pie
                           data={expenseByCategory}

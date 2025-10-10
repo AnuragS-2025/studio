@@ -149,7 +149,7 @@ export const useInvestments = () => {
     const firestore = useFirestore();
     const { user } = useUser();
     const investmentsQuery = useMemoFirebase(() =>
-        user ? collection(firestore, 'users', user.uid, 'investments') : null
+        user ? query(collection(firestore, 'users', user.uid, 'investments'), orderBy('name')) : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Investment>(investmentsQuery);
 
@@ -297,5 +297,7 @@ export const getExpenseChartData = () => {
       { name: "Jul", income: 92000, expenses: 39300 },
     ]
 }
+
+    
 
     

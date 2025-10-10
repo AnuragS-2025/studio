@@ -26,6 +26,7 @@ import {
   Users,
   PlusCircle,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/overview";
@@ -46,7 +47,8 @@ import { AddIncomeForm } from "./expenses/add-income-form";
 import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 
 export default function Home() {
@@ -62,6 +64,11 @@ export default function Home() {
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
   const marketData = getMarketData();
+  const [showAllMovers, setShowAllMovers] = useState(false);
+
+  const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
+
 
   const expenseChartConfig = {
       value: { label: "Value" },
@@ -384,18 +391,19 @@ export default function Home() {
                         <CardTitle>Top Movers</CardTitle>
                         <CardDescription>Assets with the most significant price changes today.</CardDescription>
                     </div>
-                    <div className="w-[180px]">
-                        <Select>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a stock" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {marketData.map((stock) => (
-                                    <SelectItem key={stock.name} value={stock.name}>{stock.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-1">
+                                <span>{showAllMovers ? "Show Less" : "Show More"}</span>
+                                <ChevronDown className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setShowAllMovers(!showAllMovers)}>
+                                {showAllMovers ? "Show Top 3" : "Show All"}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardHeader>
                 <CardContent className="p-0">
                 <Table>
@@ -407,9 +415,7 @@ export default function Home() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {marketData
-                        .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
-                        .map((stock) => (
+                    {displayedMovers.map((stock) => (
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
                             <TableCell>₹{stock.value.toLocaleString('en-IN')}</TableCell>
@@ -571,3 +577,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

@@ -547,23 +547,23 @@ export default function Home() {
               })}
             </div>
             <Card className="border-accent">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="text-accent" />
-                  Optimize Your Budget
-                </CardTitle>
-                <CardDescription>
-                  Use our AI Advisor to get personalized tips on how to improve your budget and save more.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="text-accent" />
+                    Optimize Your Budget
+                  </CardTitle>
+                  <CardDescription>
+                    Use our AI Advisor to get personalized tips on how to improve your budget and save more.
+                  </CardDescription>
+                </div>
+                <Button asChild>
+                  <Link href="#advisor">Ask AI Advisor</Link>
+                </Button>
               </CardHeader>
               <CardContent>
                 <p>Ready to take control of your spending? Describe your current budgeting challenges and goals to our AI Advisor for tailored strategies.</p>
               </CardContent>
-              <CardFooter>
-                <Button asChild>
-                  <Link href="#advisor">Ask AI Advisor</Link>
-                </Button>
-              </CardFooter>
             </Card>
         </section>
       </main>

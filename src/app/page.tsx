@@ -65,9 +65,11 @@ export default function Home() {
 
   const marketData = getMarketData();
   const [showAllMovers, setShowAllMovers] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
+  const displayedTransactions = showAllTransactions ? transactions : transactions?.slice(0, 3);
 
 
   const expenseChartConfig = {
@@ -438,11 +440,17 @@ export default function Home() {
           </div>
             <div className="grid gap-4 lg:grid-cols-5">
                 <Card className="lg:col-span-3">
-                <CardHeader>
-                    <CardTitle>Transaction History</CardTitle>
-                    <CardDescription>
-                    A complete list of your recent financial activities.
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Transaction History</CardTitle>
+                        <CardDescription>
+                        A complete list of your recent financial activities.
+                        </CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllTransactions(!showAllTransactions)}>
+                        <span>{showAllTransactions ? "Show Less" : "Show More"}</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", showAllTransactions && "rotate-180")} />
+                    </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                   {transactionsLoading ? (
@@ -464,7 +472,7 @@ export default function Home() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions?.map((transaction) => (
+                        {displayedTransactions?.map((transaction) => (
                         <TableRow key={transaction.id}>
                             <TableCell className="hidden sm:table-cell">{format(new Date(transaction.date), 'PPP')}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
@@ -524,17 +532,20 @@ export default function Home() {
         {/* Budget Section */}
         <section id="budget" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="lg:col-span-1">
-                <CardHeader>
+               <Card className="lg:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
                     <CardTitle>Optimize Your Budget</CardTitle>
-                    <CardDescription>
-                        Get AI-driven recommendations for optimization.
-                    </CardDescription>
+                    <Button asChild size="sm" className="ml-auto gap-1">
+                        <Link href="#advisor">
+                            Ask AI Advisor
+                            <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                    </Button>
                 </CardHeader>
                 <CardContent>
-                    <Button asChild className="w-full">
-                        <Link href="#advisor">Ask AI Advisor</Link>
-                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                        Get AI-driven recommendations for optimization.
+                    </p>
                 </CardContent>
               </Card>
               {budgetsLoading ? (
@@ -568,5 +579,8 @@ export default function Home() {
     </div>
   );
 }
+
+    
+
 
     

@@ -48,7 +48,7 @@ import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 export default function Home() {
@@ -66,6 +66,26 @@ export default function Home() {
   const marketData = getMarketData();
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [activeTab, setActiveTab] = useState('advisor');
+
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (hash === 'goals') {
+        setActiveTab('goals');
+      } else if (hash === 'advisor') {
+        setActiveTab('advisor');
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
@@ -162,7 +182,7 @@ export default function Home() {
                </CardDescription>
              </CardHeader>
              <CardContent>
-                <Tabs defaultValue="advisor" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="advisor">AI Financial Advisor</TabsTrigger>
                     <TabsTrigger value="goals">Automated Goal Setting</TabsTrigger>
@@ -587,12 +607,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-
-    
-
-    
-
-    

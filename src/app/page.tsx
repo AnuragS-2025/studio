@@ -531,6 +531,14 @@ export default function Home() {
 
         {/* Budget Section */}
         <section id="budget" className="space-y-4 scroll-m-20">
+            <div className="flex items-center">
+                <div className="grid gap-2">
+                    <h2 className="text-3xl font-bold tracking-tight">Budget</h2>
+                    <p className="text-muted-foreground">
+                        Manage and track your spending against your budget limits.
+                    </p>
+                </div>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                <Card className="lg:col-span-1">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -582,6 +590,8 @@ export default function Home() {
 
     
 
+
+    
 
     
 

@@ -169,7 +169,7 @@ export default function Home() {
           </div>
           
            {/* AI Hub Section */}
-           <section id="advisor" className="space-y-4 scroll-m-20">
+           <section id="advisor" className="space-y-4 scroll-m-24">
            <Card className="bg-gradient-primary-accent border-primary/20 shadow-lg">
              <CardHeader className="text-center">
                <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">

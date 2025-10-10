@@ -523,25 +523,25 @@ export default function Home() {
 
         {/* Budget Section */}
         <section id="budget" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Budgeting Tool</CardTitle>
-                  <CardDescription>
-                    Manage your budgets and get AI-driven recommendations for optimization.
-                  </CardDescription>
-                </div>
-                <Button asChild>
-                  <Link href="#advisor">Ask AI Advisor</Link>
-                </Button>
-              </CardHeader>
-            </Card>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                    <CardTitle>Optimize Your Budget</CardTitle>
+                    <CardDescription>
+                        Get AI-driven recommendations for optimization.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full">
+                        <Link href="#advisor">Ask AI Advisor</Link>
+                    </Button>
+                </CardContent>
+              </Card>
               {budgetsLoading ? (
                 <>
-                  <Skeleton className="h-36 w-full" />
-                  <Skeleton className="h-36 w-full" />
-                  <Skeleton className="h-36 w-full" />
+                  <Skeleton className="h-44 w-full" />
+                  <Skeleton className="h-44 w-full" />
+                  <Skeleton className="h-44 w-full" />
                 </>
               ) : budgets?.map((budget) => {
                 const progress = (budget.spent / budget.limit) * 100;

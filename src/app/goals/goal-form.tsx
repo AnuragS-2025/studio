@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sparkles, Target } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const initialState = {
   message: '',
@@ -97,13 +98,18 @@ export function GoalForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="whitespace-pre-wrap">{state.data.recommendations}</p>
-            <div className="font-semibold text-primary">{state.data.estimatedTimeToGoal}</div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Recommendations</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">{state.data.recommendations}</p>
+            </div>
+            <Separator />
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Estimated Time to Goal</h3>
+              <p className="font-semibold text-primary">{state.data.estimatedTimeToGoal}</p>
+            </div>
           </CardContent>
         </Card>
       )}
     </form>
   );
 }
-
-    

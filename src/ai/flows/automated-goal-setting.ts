@@ -29,7 +29,7 @@ export type AutomatedGoalSettingInput = z.infer<typeof AutomatedGoalSettingInput
 const AutomatedGoalSettingOutputSchema = z.object({
   recommendations: z
     .string()
-    .describe('AI-driven recommendations on how to achieve the financial goal.'),
+    .describe('AI-driven recommendations on how to achieve the financial goal, formatted for readability with line breaks.'),
   estimatedTimeToGoal: z
     .string()
     .describe('Estimated time to achieve the goal based on current inputs.'),
@@ -56,19 +56,13 @@ const prompt = ai.definePrompt({
   Their time horizon is: {{timeHorizonYears}} years
 
   Based on this information, provide specific and actionable recommendations on how the user can achieve their goal.
-  Also estimate how long it will take to achieve the goal, and include that in the answer.
-  Be concise and provide the answer in a conversational style.
-  Ensure that recommendations are tailored to the user's risk tolerance and time horizon.
-  If the goal cannot be achieved with the current parameters, suggest more realistic parameters.
-  The recommendations should include information about how the user can adjust their parameters.
-  Do not mention that you are an AI, just provide the recommendations.
-  Make sure to provide an estimated time to goal, even if the recommendations involve adjusting parameters.
-  Limit the estimated time to goal to weeks, months, or years.
-  For example, if the time to goal is a fraction of a year, then answer in terms of months.  If the time to goal is between 1 and 2 years, then answer in terms of years.  If the time to goal is less than a month, then answer in terms of weeks.
-  If the time to goal is over two years, answer in terms of years.
-  Make the estimatedTimeToGoal be the last sentence in the recommendations.
-  Do not specify amounts to be saved, give strategies for saving.  If there are strategies that do involve saving specific amounts, be sure to mention they are only examples and may not reflect actual savings.
-  Ensure that the user's risk tolerance and time horizon are accounted for when generating the recommendations.
+  Also, provide a separate estimation of how long it will take to achieve the goal.
+  
+  Structure your response into two parts:
+  1.  **recommendations**: A conversational and encouraging text with clear, actionable steps. Use line breaks to separate paragraphs and bullet points for lists to improve readability. Ensure that recommendations are tailored to the user's risk tolerance and time horizon. If the goal is not realistic with the current parameters, suggest adjustments.
+  2.  **estimatedTimeToGoal**: A concise string stating the estimated time to reach the goal (e.g., "Approximately 5 years", "About 6 months").
+
+  Do not mention that you are an AI.
 `,
 });
 

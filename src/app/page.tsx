@@ -391,19 +391,10 @@ export default function Home() {
                         <CardTitle>Top Movers</CardTitle>
                         <CardDescription>Assets with the most significant price changes today.</CardDescription>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1">
-                                <span>{showAllMovers ? "Show Less" : "Show More"}</span>
-                                <ChevronDown className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setShowAllMovers(!showAllMovers)}>
-                                {showAllMovers ? "Show Top 3" : "Show All"}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllMovers(!showAllMovers)}>
+                        <span>{showAllMovers ? "Show Less" : "Show More"}</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
+                    </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                 <Table>
@@ -577,5 +568,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     

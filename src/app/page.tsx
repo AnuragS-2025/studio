@@ -495,7 +495,7 @@ export default function Home() {
                 </Card>
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Expenses by Category</CardTitle>
+                        <CardTitle>Expenses Tracker</CardTitle>
                         <CardDescription>A breakdown of your spending this month.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -582,5 +582,7 @@ export default function Home() {
 
     
 
+
+    
 
     

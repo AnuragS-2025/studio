@@ -51,10 +51,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState, useEffect } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
+import { useFirestore, useUser } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 
 export default function Home() {
   const { user } = useUserData();
+  const firestore = useFirestore();
+  const { user: authUser } = useUser();
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const { recentTransactions, isLoading: recentTransactionsLoading } = useRecentTransactions(5);
   const { investments, isLoading: investmentsLoading } = useInvestments();
@@ -94,6 +98,40 @@ export default function Home() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+
+  useEffect(() => {
+    const updatePortfolioValues = async () => {
+      if (!investments || !firestore || !authUser) return;
+
+      const currentMarketData = getMarketData();
+
+      for (const investment of investments) {
+        const marketInfo = currentMarketData.find(stock => stock.name === investment.name);
+        if (marketInfo) {
+          const newPrice = marketInfo.value;
+          const newValue = investment.quantity * newPrice;
+
+          // Only update if the price has actually changed to avoid unnecessary writes
+          if (newPrice !== investment.price || newValue !== investment.value) {
+            const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+            try {
+              await updateDoc(investmentRef, {
+                price: newPrice,
+                value: newValue
+              });
+            } catch (error) {
+              console.error(`Failed to update investment ${investment.symbol}:`, error);
+            }
+          }
+        }
+      }
+    };
+
+    const intervalId = setInterval(updatePortfolioValues, 5 * 60 * 1000); // 5 minutes
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [investments, firestore, authUser]);
 
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -630,3 +668,6 @@ export default function Home() {
     
 
 
+
+
+    

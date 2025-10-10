@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 
 export function AddInvestmentForm() {
   const { toast } = useToast();
@@ -69,7 +69,7 @@ export function AddInvestmentForm() {
         price: priceNum,
         value,
         type,
-        createdAt: serverTimestamp(),
+        createdAt: new Date(),
       });
 
       toast({
@@ -169,3 +169,5 @@ export function AddInvestmentForm() {
     </Dialog>
   );
 }
+
+    

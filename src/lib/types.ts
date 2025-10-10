@@ -11,7 +11,7 @@ export type Investment = {
   price: number;
   value: number;
   type: 'stock' | 'bond' | 'crypto';
-  createdAt: any;
+  createdAt?: any;
 };
 
 export type Transaction = {
@@ -37,3 +37,5 @@ export type Goal = {
   currentAmount: number;
   deadline: string;
 };
+
+    

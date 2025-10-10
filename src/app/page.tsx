@@ -69,7 +69,7 @@ export default function Home() {
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
-  const displayedTransactions = showAllTransactions ? transactions?.slice(0, 3) : transactions?.slice(0, 3);
+  const displayedTransactions = showAllTransactions ? transactions : transactions?.slice(0, 3);
 
 
   const expenseChartConfig = {
@@ -533,7 +533,7 @@ export default function Home() {
         <section id="budget" className="space-y-4 scroll-m-20">
             <div className="flex items-center">
                 <div className="grid gap-2">
-                    <h2 className="text-3xl font-bold tracking-tight">Budget</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">Budget Tool</h2>
                     <p className="text-muted-foreground">
                         Manage and track your spending against your budget limits.
                     </p>
@@ -590,8 +590,6 @@ export default function Home() {
 
     
 
-
-    
 
     
 

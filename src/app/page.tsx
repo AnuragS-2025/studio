@@ -114,7 +114,7 @@ export default function Home() {
                 <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString('en-IN')}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3.4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -531,7 +531,7 @@ export default function Home() {
                     Manage your budgets and get AI-driven recommendations for optimization.
                   </CardDescription>
                 </div>
-                 <Button asChild>
+                <Button asChild>
                   <Link href="#advisor">Ask AI Advisor</Link>
                 </Button>
               </CardHeader>
@@ -568,7 +568,5 @@ export default function Home() {
     </div>
   );
 }
-
-    
 
     

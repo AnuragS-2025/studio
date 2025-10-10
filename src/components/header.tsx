@@ -79,12 +79,6 @@ export function Header() {
         </Link>
         <Link
           href="#advisor"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Goals
-        </Link>
-        <Link
-          href="#advisor"
           className="text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
         >
           AI Advisor

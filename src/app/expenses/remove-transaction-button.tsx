@@ -7,7 +7,7 @@ import { removeTransactionAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,10 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { doc, deleteDoc } from 'firebase/firestore';
 
 const initialState = {
   message: '',
   errors: null,
+  data: null
 };
 
 function SubmitButton() {
@@ -45,15 +47,28 @@ export function RemoveTransactionButton({ transactionId }: { transactionId: stri
   const [state, formAction] = useActionState(removeTransactionAction, initialState);
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
 
   useEffect(() => {
     if (!state) return;
 
-    if (state.message === 'Success') {
-      toast({
-        title: "Transaction Removed",
-        description: "The transaction has been successfully deleted.",
-      });
+    if (state.message === 'Success' && state.data) {
+        const { userId, transactionId } = state.data;
+        if (firestore && userId && transactionId) {
+            const docRef = doc(firestore, 'users', userId, 'transactions', transactionId);
+            deleteDoc(docRef).then(() => {
+                 toast({
+                    title: "Transaction Removed",
+                    description: "The transaction has been successfully deleted.",
+                });
+            }).catch((e) => {
+                 toast({
+                    variant: "destructive",
+                    title: "Error deleting from database",
+                    description: e.message,
+                });
+            });
+        }
     } else if (state.message) {
       toast({
         variant: "destructive",
@@ -61,7 +76,7 @@ export function RemoveTransactionButton({ transactionId }: { transactionId: stri
         description: state.message,
       });
     }
-  }, [state, toast]);
+  }, [state, toast, firestore]);
 
   return (
     <AlertDialog>

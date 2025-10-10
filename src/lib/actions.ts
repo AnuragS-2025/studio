@@ -5,11 +5,10 @@ import { aiFinancialAdvisor, AiFinancialAdvisorInput, AiFinancialAdvisorOutput }
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
 import { scanBill } from '@/ai/flows/scan-bill-flow';
 import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';
-import { getFirestore } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { initializeFirebase, useFirestore } from '@/firebase';
+import { initializeFirebase } from '@/firebase';
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -269,22 +268,24 @@ export async function removeTransactionAction(prevState: any, formData: FormData
         return {
             message: 'Validation failed',
             errors: validatedFields.error.flatten().fieldErrors,
+            data: null,
         };
     }
 
     try {
-        const { firestore } = initializeFirebase();
-        const { transactionId, userId } = validatedFields.data;
-        const docRef = doc(firestore, 'users', userId, 'transactions', transactionId);
-        await deleteDoc(docRef);
         revalidatePath('/');
-        return { message: 'Success' };
+        return { 
+            message: 'Success',
+            errors: null,
+            data: validatedFields.data,
+        };
     } catch (error) {
         console.error('Error removing transaction:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
             message: `Error removing transaction: ${errorMessage}`,
             errors: null,
+            data: null,
         };
     }
 }

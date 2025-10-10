@@ -34,9 +34,6 @@ import { AdvisorForm } from "@/app/advisor/advisor-form";
 import { GoalForm } from "@/app/goals/goal-form";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Area, AreaChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +45,7 @@ import { format } from "date-fns";
 import { AddIncomeForm } from "./expenses/add-income-form";
 import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
+import { AddInvestmentForm } from "./portfolio/add-investment-form";
 
 
 export default function Home() {
@@ -265,47 +263,7 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Add Investment
-                    </span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Investment</DialogTitle>
-                    <DialogDescription>
-                      Add a new stock, bond, or cryptocurrency to your portfolio.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Name
-                      </Label>
-                      <Input id="name" defaultValue="Apple Inc." className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="quantity" className="text-right">
-                        Quantity
-                      </Label>
-                      <Input id="quantity" type="number" defaultValue="10" className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price" className="text-right">
-                        Price
-                      </Label>
-                      <Input id="price" type="number" defaultValue="175" className="col-span-3" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save Investment</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <AddInvestmentForm />
             </div>
           </div>
           <Card>

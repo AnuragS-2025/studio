@@ -16,11 +16,13 @@ const MOCK_USER: User = {
 };
 
 export const MOCK_INVESTMENTS: Omit<Investment, 'id'>[] = [
-  { name: 'Reliance Industries', symbol: 'RELIANCE', quantity: 10, price: 2900.0, value: 29000.0, type: 'stock' },
-  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.05, price: 5700000.0, value: 285000.0, type: 'crypto' },
-  { name: 'India Gov. Bond 2033', symbol: 'IN071833G', quantity: 5, price: 101.5, value: 507.5, type: 'bond' },
-  { name: 'Tata Consultancy', symbol: 'TCS', quantity: 15, price: 3800.0, value: 57000.0, type: 'stock' },
-  { name: 'Ethereum', symbol: 'ETH', quantity: 1, price: 300000.0, value: 300000.0, type: 'crypto' },
+  { name: 'Reliance Industries', symbol: 'RELIANCE', quantity: 10, price: 2950.0, value: 29500.0, type: 'stock' },
+  { name: 'Tata Consultancy', symbol: 'TCS', quantity: 15, price: 3850.0, value: 57750.0, type: 'stock' },
+  { name: 'HDFC Bank', symbol: 'HDFCBANK', quantity: 25, price: 1680.0, value: 42000.0, type: 'stock' },
+  { name: 'Infosys', symbol: 'INFY', quantity: 30, price: 1550.0, value: 46500.0, type: 'stock' },
+  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.05, price: 5800000.0, value: 290000.0, type: 'crypto' },
+  { name: 'Ethereum', symbol: 'ETH', quantity: 1, price: 310000.0, value: 310000.0, type: 'crypto' },
+  { name: 'India Gov. Bond 2033', symbol: 'IN071833G', quantity: 5, price: 102.5, value: 512.5, type: 'bond' },
 ];
 
 export const MOCK_BUDGETS: Omit<Budget, 'id'>[] = [
@@ -265,22 +267,22 @@ export const addTransaction = async (userId: string, transaction: Omit<Transacti
 
 export const getMarketData = () => {
   return [
-    { name: 'RELIANCE', value: 2900, change: 1.5, chartData: [
-      { month: 'Jan', value: 2700 }, { month: 'Feb', value: 2750 }, { month: 'Mar', value: 2800 },
-      { month: 'Apr', value: 2850 }, { month: 'May', value: 2875 }, { month: 'Jun', value: 2900 },
+    { name: 'RELIANCE', value: 2950, change: 1.2, chartData: [
+      { month: 'Jan', value: 2800 }, { month: 'Feb', value: 2850 }, { month: 'Mar', value: 2900 },
+      { month: 'Apr', value: 2880 }, { month: 'May', value: 2920 }, { month: 'Jun', value: 2950 },
     ]},
-    { name: 'TCS', value: 3800, change: -0.8, chartData: [
-      { month: 'Jan', value: 3900 }, { month: 'Feb', value: 3850 }, { month: 'Mar', value: 3820 },
-      { month: 'Apr', value: 3880 }, { month: 'May', value: 3840 }, { month: 'Jun', value: 3800 },
+    { name: 'TCS', value: 3850, change: -0.5, chartData: [
+      { month: 'Jan', value: 3900 }, { month: 'Feb', value: 3880 }, { month: 'Mar', value: 3820 },
+      { month: 'Apr', value: 3860 }, { month: 'May', value: 3840 }, { month: 'Jun', value: 3850 },
     ]},
-    { name: 'BTC', value: 5700000, change: 4.2, chartData: [
-      { month: 'Jan', value: 5200000 }, { month: 'Feb', value: 5400000 }, { month: 'Mar', value: 5600000 },
-      { month: 'Apr', value: 5500000 }, { month: 'May', value: 5800000 }, { month: 'Jun', value: 5700000 },
+    { name: 'HDFCBANK', value: 1680, change: 2.1, chartData: [
+      { month: 'Jan', value: 1600 }, { month: 'Feb', value: 1620 }, { month: 'Mar', value: 1650 },
+      { month: 'Apr', value: 1630 }, { month: 'May', value: 1660 }, { month: 'Jun', value: 1680 },
     ]},
-    { name: 'ETH', value: 300000, change: 2.1, chartData: [
-        { month: 'Jan', value: 280000 }, { month: 'Feb', value: 290000 }, { month: 'Mar', value: 310000 },
-        { month: 'Apr', value: 305000 }, { month: 'May', value: 295000 }, { month: 'Jun', value: 300000 },
-      ]},
+    { name: 'INFY', value: 1550, change: -1.8, chartData: [
+      { month: 'Jan', value: 1600 }, { month: 'Feb', value: 1580 }, { month: 'Mar', aname: 'Mar', value: 1590 },
+      { month: 'Apr', value: 1560 }, { month: 'May', value: 1570 }, { month: 'Jun', value: 1550 },
+    ]},
   ];
 };
 

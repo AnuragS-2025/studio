@@ -76,10 +76,10 @@ export default function LoginPage() {
             router.push('/');
         } catch (error: any) {
             let description = "An unexpected error occurred.";
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                description = "User Account not Found";
-            } else if (error.code === 'auth/wrong-password') {
+            if (error.code === 'auth/wrong-password') {
                 description = "Incorrect password, Try Again!";
+            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                description = "User Account not Found";
             } else {
                 description = error.message;
             }

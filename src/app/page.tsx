@@ -46,6 +46,7 @@ import { AddExpenseForm } from "./expenses/add-expense-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { AddIncomeForm } from "./expenses/add-income-form";
+import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 
 
 export default function Home() {
@@ -484,6 +485,7 @@ export default function Home() {
                         <TableHead>Description</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[50px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -497,6 +499,9 @@ export default function Home() {
                             <TableCell className={cn("text-right font-semibold", transaction.type === 'income' ? 'text-green-500' : '')}>
                             {transaction.type === 'expense' ? '-' : '+'}₹
                             {transaction.amount.toFixed(2)}
+                            </TableCell>
+                             <TableCell className="text-right">
+                                <RemoveTransactionButton transactionId={transaction.id} />
                             </TableCell>
                         </TableRow>
                         ))}

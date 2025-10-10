@@ -5,8 +5,11 @@ import { aiFinancialAdvisor, AiFinancialAdvisorInput, AiFinancialAdvisorOutput }
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
 import { scanBill } from '@/ai/flows/scan-bill-flow';
 import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';
+import { getFirestore } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { initializeFirebase, useFirestore } from '@/firebase';
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -249,4 +252,39 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
       data: null,
     };
   }
+}
+
+const removeTransactionSchema = z.object({
+    transactionId: z.string().min(1, 'Transaction ID is required.'),
+    userId: z.string().min(1, 'User ID is required.'),
+});
+
+export async function removeTransactionAction(prevState: any, formData: FormData) {
+    const validatedFields = removeTransactionSchema.safeParse({
+        transactionId: formData.get('transactionId'),
+        userId: formData.get('userId'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    try {
+        const { firestore } = initializeFirebase();
+        const { transactionId, userId } = validatedFields.data;
+        const docRef = doc(firestore, 'users', userId, 'transactions', transactionId);
+        await deleteDoc(docRef);
+        revalidatePath('/');
+        return { message: 'Success' };
+    } catch (error) {
+        console.error('Error removing transaction:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+            message: `Error removing transaction: ${errorMessage}`,
+            errors: null,
+        };
+    }
 }

@@ -86,12 +86,6 @@ export function UserNav() {
             <DropdownMenuItem onSelect={() => setProfileModalOpen(true)}>
                 Update Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
-                Billing
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-                Settings
-            </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>

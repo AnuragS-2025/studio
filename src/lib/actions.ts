@@ -1,7 +1,7 @@
 
 'use server';
 
-import { aiFinancialAdvisor, AiFinancialAdvisorInput } from '@/ai/flows/ai-financial-advisor';
+import { aiFinancialAdvisor, AiFinancialAdvisorInput, AiFinancialAdvisorOutput } from '@/ai/flows/ai-financial-advisor';
 import { automatedGoalSetting, AutomatedGoalSettingInput } from '@/ai/flows/automated-goal-setting';
 import { scanBill } from '@/ai/flows/scan-bill-flow';
 import { ScanBillInputSchema } from '@/ai/schemas/scan-bill-schemas';

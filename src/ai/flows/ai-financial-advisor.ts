@@ -25,11 +25,17 @@ const AiFinancialAdvisorInputSchema = z.object({
 export type AiFinancialAdvisorInput = z.infer<typeof AiFinancialAdvisorInputSchema>;
 
 const AiFinancialAdvisorOutputSchema = z.object({
-  advice: z
+  analysis: z
     .string()
+    .describe('A brief analysis of the user\'s overall financial health.'),
+  recommendations: z
+    .array(z.string())
     .describe(
-      'Personalized financial advice and insights based on the user\'s financial data and goals.'
+      'A list of 3-5 specific, actionable recommendations for the user to improve their financial situation.'
     ),
+  insights: z
+    .string()
+    .describe('Interesting insights or potential opportunities based on the provided data.'),
 });
 export type AiFinancialAdvisorOutput = z.infer<typeof AiFinancialAdvisorOutputSchema>;
 
@@ -49,7 +55,7 @@ Financial Data: {{{financialData}}}
 
 Financial Goals: {{{financialGoals}}}
 
-Provide specific recommendations for improving the user's financial well-being.`,
+Provide a structured response with an analysis, a list of recommendations, and key insights.`,
 });
 
 const aiFinancialAdvisorFlow = ai.defineFlow(

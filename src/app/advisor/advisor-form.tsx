@@ -7,9 +7,10 @@ import { getFinancialAdvice } from '@/lib/actions';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Sparkles, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const initialState = {
   message: '',
@@ -77,8 +78,28 @@ export function AdvisorForm() {
               Your Personalized Advice
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap">{state.data.advice}</p>
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Analysis</h3>
+              <p className="text-muted-foreground">{state.data.analysis}</p>
+            </div>
+            <Separator />
+             <div>
+              <h3 className="font-semibold text-lg mb-4">Recommendations</h3>
+              <ul className="space-y-3">
+                {state.data.recommendations?.map((rec: string, index: number) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Separator />
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Key Insights</h3>
+              <p className="text-muted-foreground">{state.data.insights}</p>
+            </div>
           </CardContent>
         </Card>
       )}

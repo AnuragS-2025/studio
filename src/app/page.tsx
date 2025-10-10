@@ -46,6 +46,7 @@ import { AddIncomeForm } from "./expenses/add-income-form";
 import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 export default function Home() {
@@ -332,7 +333,7 @@ export default function Home() {
                 </CardHeader>
             </Card>
             <div className="grid gap-4 md:grid-cols-2">
-                {marketData.map((stock) => (
+                {marketData.slice(0, 4).map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -378,9 +379,23 @@ export default function Home() {
                 ))}
             </div>
             <Card>
-                <CardHeader>
-                <CardTitle>Top Movers</CardTitle>
-                <CardDescription>Assets with the most significant price changes today.</CardDescription>
+                <CardHeader className="flex items-center justify-between flex-row">
+                    <div className="space-y-1.5">
+                        <CardTitle>Top Movers</CardTitle>
+                        <CardDescription>Assets with the most significant price changes today.</CardDescription>
+                    </div>
+                    <div className="w-[180px]">
+                        <Select>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a stock" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {marketData.map((stock) => (
+                                    <SelectItem key={stock.name} value={stock.name}>{stock.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
                 <Table>
@@ -512,11 +527,16 @@ export default function Home() {
         {/* Budget Section */}
         <section id="budget" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Budgeting Tool</CardTitle>
-                <CardDescription>
-                  Manage your budgets and get AI-driven recommendations for optimization.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Budgeting Tool</CardTitle>
+                  <CardDescription>
+                    Manage your budgets and get AI-driven recommendations for optimization.
+                  </CardDescription>
+                </div>
+                 <Button asChild>
+                  <Link href="#advisor">Ask AI Advisor</Link>
+                </Button>
               </CardHeader>
             </Card>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -546,25 +566,6 @@ export default function Home() {
                 );
               })}
             </div>
-            <Card className="border-accent">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="text-accent" />
-                    Optimize Your Budget
-                  </CardTitle>
-                  <CardDescription>
-                    Use our AI Advisor to get personalized tips on how to improve your budget and save more.
-                  </CardDescription>
-                </div>
-                <Button asChild>
-                  <Link href="#advisor">Ask AI Advisor</Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <p>Ready to take control of your spending? Describe your current budgeting challenges and goals to our AI Advisor for tailored strategies.</p>
-              </CardContent>
-            </Card>
         </section>
       </main>
     </div>

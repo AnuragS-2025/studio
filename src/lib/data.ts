@@ -264,25 +264,28 @@ export const addTransaction = async (userId: string, transaction: Omit<Transacti
 
 
 // --- Mock Data for Components that are not yet migrated ---
+const generateChartData = (base: number, points = 6) => {
+  const data = [];
+  let currentValue = base;
+  for (let i = 0; i < points; i++) {
+    currentValue += (Math.random() - 0.5) * (base * 0.1); // Fluctuate by up to 10%
+    data.push({ value: Math.round(currentValue) });
+  }
+  return data;
+};
 
 export const getMarketData = () => {
   return [
-    { name: 'Reliance Industries', value: 2950, change: 1.2, chartData: [
-      { month: 'Jan', value: 2800 }, { month: 'Feb', value: 2850 }, { month: 'Mar', value: 2900 },
-      { month: 'Apr', value: 2880 }, { month: 'May', value: 2920 }, { month: 'Jun', value: 2950 },
-    ]},
-    { name: 'Tata Consultancy', value: 3850, change: -0.5, chartData: [
-      { month: 'Jan', value: 3900 }, { month: 'Feb', value: 3880 }, { month: 'Mar', value: 3820 },
-      { month: 'Apr', value: 3860 }, { month: 'May', value: 3840 }, { month: 'Jun', value: 3850 },
-    ]},
-    { name: 'HDFC Bank', value: 1680, change: 2.1, chartData: [
-      { month: 'Jan', value: 1600 }, { month: 'Feb', value: 1620 }, { month: 'Mar', value: 1650 },
-      { month: 'Apr', value: 1630 }, { month: 'May', value: 1660 }, { month: 'Jun', value: 1680 },
-    ]},
-    { name: 'Infosys', value: 1550, change: -1.8, chartData: [
-      { month: 'Jan', value: 1600 }, { month: 'Feb', value: 1580 }, { month: 'Mar', aname: 'Mar', value: 1590 },
-      { month: 'Apr', value: 1560 }, { month: 'May', value: 1570 }, { month: 'Jun', value: 1550 },
-    ]},
+    { name: 'Reliance Industries', value: 2950, change: 1.2, chartData: generateChartData(2950) },
+    { name: 'Tata Consultancy', value: 3850, change: -0.5, chartData: generateChartData(3850) },
+    { name: 'HDFC Bank', value: 1680, change: 2.1, chartData: generateChartData(1680) },
+    { name: 'Infosys', value: 1550, change: -1.8, chartData: generateChartData(1550) },
+    { name: 'ICICI Bank', value: 1100, change: 0.8, chartData: generateChartData(1100) },
+    { name: 'Bharti Airtel', value: 1200, change: -1.1, chartData: generateChartData(1200) },
+    { name: 'State Bank of India', value: 780, change: 2.5, chartData: generateChartData(780) },
+    { name: 'Larsen & Toubro', value: 3600, change: 0.3, chartData: generateChartData(3600) },
+    { name: 'Hindustan Unilever', value: 2500, change: -0.2, chartData: generateChartData(2500) },
+    { name: 'ITC', value: 430, change: 1.5, chartData: generateChartData(430) },
   ];
 };
 

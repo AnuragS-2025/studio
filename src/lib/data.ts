@@ -115,17 +115,31 @@ export const useTransactions = () => {
     user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc')) : null
   , [firestore, user]);
   const { data, isLoading, error } = useCollection<Transaction>(transactionsQuery);
-  return { transactions: data, isLoading, error };
+
+  const transactions = useMemo(() => {
+    if (!data) return null;
+    const uniqueTransactions = new Map<string, Transaction & {id: string}>();
+    data.forEach(transaction => {
+      // Create a unique key for each transaction based on its properties
+      const key = `${transaction.date}-${transaction.description}-${transaction.amount}-${transaction.type}-${transaction.category}`;
+      if (!uniqueTransactions.has(key)) {
+        uniqueTransactions.set(key, transaction);
+      }
+    });
+    return Array.from(uniqueTransactions.values());
+  }, [data]);
+
+  return { transactions, isLoading, error };
 };
 
 export const useRecentTransactions = (count: number) => {
-    const firestore = useFirestore();
-    const { user } = useUser();
-    const recentTransactionsQuery = useMemoFirebase(() => 
-      user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc'), limit(count)) : null
-    , [firestore, user, count]);
-    const { data, isLoading, error } = useCollection<Transaction>(recentTransactionsQuery);
-    return { recentTransactions: data, isLoading, error };
+    const { transactions, isLoading, error } = useTransactions();
+    const recentTransactions = useMemo(() => {
+        if (!transactions) return null;
+        return transactions.slice(0, count);
+    }, [transactions, count]);
+
+    return { recentTransactions, isLoading, error };
 }
 
 
@@ -146,7 +160,19 @@ export const useBudgets = () => {
         user ? collection(firestore, 'users', user.uid, 'budgets') : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Budget>(budgetsQuery);
-    return { budgets: data, isLoading, error };
+
+    const budgets = useMemo(() => {
+      if (!data) return null;
+      const uniqueBudgets = new Map<string, Budget & {id: string}>();
+      data.forEach(budget => {
+        if (!uniqueBudgets.has(budget.category)) {
+          uniqueBudgets.set(budget.category, budget);
+        }
+      });
+      return Array.from(uniqueBudgets.values());
+    }, [data]);
+
+    return { budgets, isLoading, error };
 };
 
 

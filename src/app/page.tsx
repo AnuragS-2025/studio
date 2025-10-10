@@ -69,7 +69,7 @@ export default function Home() {
   const totalExpenses = useTotalExpenses(transactions);
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
-  const marketData = getMarketData();
+  const [marketData, setMarketData] = useState(getMarketData());
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
@@ -100,10 +100,31 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const updateMarketData = () => {
+        setMarketData(prevData => {
+            return prevData.map(stock => {
+                const changePercent = (Math.random() - 0.5) * 2; // New change between -1% and +1%
+                const newValue = stock.value * (1 + changePercent / 100);
+                const newChartData = [...stock.chartData.slice(1), { value: Math.round(newValue) }];
+                return {
+                    ...stock,
+                    value: Math.round(newValue * 100) / 100,
+                    change: changePercent,
+                    chartData: newChartData,
+                };
+            });
+        });
+    };
+    const intervalId = setInterval(updateMarketData, 5000); // Update every 5 seconds
+    return () => clearInterval(intervalId);
+  }, []);
+
+
+  useEffect(() => {
     const updatePortfolioValues = async () => {
       if (!investments || !firestore || !authUser) return;
 
-      const currentMarketData = getMarketData();
+      const currentMarketData = marketData;
 
       for (const investment of investments) {
         const marketInfo = currentMarketData.find(stock => stock.name === investment.name);
@@ -127,14 +148,14 @@ export default function Home() {
       }
     };
 
-    const intervalId = setInterval(updatePortfolioValues, 5 * 60 * 1000); // 5 minutes
+    const intervalId = setInterval(updatePortfolioValues, 5 * 1000); // 5 seconds for demo, should be 5 minutes
 
     // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
-  }, [investments, firestore, authUser]);
+  }, [investments, firestore, authUser, marketData]);
 
 
-  const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
@@ -207,7 +228,7 @@ export default function Home() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="flex items-center justify-center pt-6">
-                 <div className="text-2xl font-bold uppercase text-green-500">Bullish</div>
+                 <div className="text-2xl font-bold uppercase text-green-500">BULLISH</div>
               </CardContent>
             </Card>
           </div>
@@ -669,5 +690,7 @@ export default function Home() {
 
 
 
+
+    
 
     

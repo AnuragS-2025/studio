@@ -168,8 +168,8 @@ export default function Home() {
                 <CardTitle className="text-sm font-medium">Market Sentiment</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent className="flex items-center justify-center">
-                 <Icons.bull className="h-16 w-16 text-green-500" />
+              <CardContent className="flex items-center justify-center pt-6">
+                 <div className="text-2xl font-bold uppercase text-green-500">Bullish</div>
               </CardContent>
             </Card>
           </div>
@@ -628,4 +628,5 @@ export default function Home() {
   );
 
     
+
 

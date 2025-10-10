@@ -35,7 +35,7 @@ import { AdvisorForm } from "@/app/advisor/advisor-form";
 import { GoalForm } from "@/app/goals/goal-form";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Area, AreaChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -314,7 +314,7 @@ export default function Home() {
                       <div className="text-2xl font-bold">₹{stock.value.toLocaleString('en-IN')}</div>
                       <div className="h-[120px]">
                       <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
-                            <AreaChart
+                            <LineChart
                                 data={stock.chartData}
                                 margin={{
                                 top: 5,
@@ -332,15 +332,14 @@ export default function Home() {
                                     />
                                 }
                                 />
-                                <Area
+                                <Line
                                 dataKey="value"
                                 type="natural"
-                                fill="var(--color-value)"
-                                fillOpacity={0.1}
                                 stroke="var(--color-value)"
-                                stackId="a"
+                                strokeWidth={2}
+                                dot={false}
                                 />
-                            </AreaChart>
+                            </LineChart>
                         </ChartContainer>
                       </div>
                     </CardContent>
@@ -573,7 +572,7 @@ export default function Home() {
              </div>
            </div>
            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-             <Card className="col-span-1">
+             <Card className="lg:col-span-1">
                <CardHeader className="flex flex-row items-center justify-between pb-4">
                  <CardTitle>Optimize Your Budget</CardTitle>
                  <Button asChild size="sm" className="ml-auto gap-1">
@@ -629,4 +628,5 @@ export default function Home() {
       </main>
     </div>
   );
-}
+
+    

@@ -31,7 +31,6 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [isSigningIn, setIsSigningIn] = useState(false);
     const [isSigningUp, setIsSigningUp] = useState(false);
-    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const addSampleData = async (userId: string) => {
         if (!firestore) return;
@@ -47,27 +46,6 @@ export default function LoginPage() {
         await Promise.all([...investmentPromises, ...budgetPromises, ...transactionPromises]);
     }
 
-    const handleGoogleSignIn = async () => {
-        setIsGoogleLoading(true);
-        const provider = new GoogleAuthProvider();
-        try {
-            const userCredential = await signInWithPopup(auth, provider);
-            const additionalInfo = getAdditionalUserInfo(userCredential);
-            if (additionalInfo?.isNewUser) {
-                await addSampleData(userCredential.user.uid);
-            }
-            router.push('/');
-        } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Login Failed",
-                description: error.message || "An unexpected error occurred during Google sign-in.",
-            });
-        } finally {
-            setIsGoogleLoading(false);
-        }
-    };
-
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSigningIn(true);
@@ -75,15 +53,11 @@ export default function LoginPage() {
             await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
         } catch (error: any) {
-            let description = "An unexpected error occurred.";
-            if (error.code === 'auth/wrong-password') {
-                description = "Incorrect password, Try Again!";
-            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                description = "User Account not Found";
+            let description = "No account found with this email and password combination. Please check your credentials or sign up.";
+            if (error.code === 'auth/invalid-credential') {
+                description = "No account found with this email and password combination. Please check your credentials or sign up.";
             }
-             else {
-                description = error.message;
-            }
+
             toast({
                 variant: "destructive",
                 title: "Login Failed",
@@ -109,7 +83,7 @@ export default function LoginPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await addSampleData(userCredential.user.uid);
             router.push('/');
-        } catch (error: any) {
+        } catch (error: any) => {
             let description = "An unexpected error occurred.";
             if (error.code === 'auth/email-already-in-use') {
                 description = "An account with this email already exists. Please sign in.";
@@ -158,7 +132,7 @@ export default function LoginPage() {
                                 <Label htmlFor="password">Password</Label>
                                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                             </div>
-                            <Button className="w-full" type="submit" disabled={isSigningIn || isSigningUp || isGoogleLoading}>
+                            <Button className="w-full" type="submit" disabled={isSigningIn || isSigningUp}>
                                 {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Sign In
                             </Button>
@@ -176,7 +150,7 @@ export default function LoginPage() {
                             </span>
                         </div>
                     </div>
-                    <Button variant="outline" className="w-full" type="button" onClick={handleEmailSignUp} disabled={isSigningIn || isSigningUp || isGoogleLoading}>
+                    <Button variant="outline" className="w-full" type="button" onClick={handleEmailSignUp} disabled={isSigningIn || isSigningUp}>
                         {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create Account
                     </Button>

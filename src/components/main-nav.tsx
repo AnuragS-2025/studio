@@ -20,7 +20,7 @@ const navItems = [
   { href: "#market", icon: CandlestickChart, label: "Market" },
   { href: "#expenses", icon: PiggyBank, label: "Expenses" },
   { href: "#budget", icon: GanttChartSquare, label: "Budget Tool" },
-  { href: "#goals", icon: Target, label: "Goals" },
+  { href: "#advisor", icon: Target, label: "Goals" },
   { href: "#advisor", icon: Sparkles, label: "AI Advisor" },
 ];
 

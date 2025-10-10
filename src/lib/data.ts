@@ -16,19 +16,19 @@ const MOCK_USER: User = {
 };
 
 export const MOCK_INVESTMENTS: Omit<Investment, 'id'>[] = [
-  { name: 'Apple Inc.', symbol: 'AAPL', quantity: 10, price: 175.0, value: 1750.0, type: 'stock' },
-  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, price: 68000.0, value: 34000.0, type: 'crypto' },
-  { name: 'US Treasury Bond', symbol: 'US10Y', quantity: 5, price: 105.0, value: 525.0, type: 'bond' },
-  { name: 'Tesla, Inc.', symbol: 'TSLA', quantity: 15, price: 180.0, value: 2700.0, type: 'stock' },
-  { name: 'Ethereum', symbol: 'ETH', quantity: 10, price: 3500.0, value: 35000.0, type: 'crypto' },
+  { name: 'Reliance Industries', symbol: 'RELIANCE', quantity: 10, price: 2900.0, value: 29000.0, type: 'stock' },
+  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.05, price: 5700000.0, value: 285000.0, type: 'crypto' },
+  { name: 'India Gov. Bond 2033', symbol: 'IN071833G', quantity: 5, price: 101.5, value: 507.5, type: 'bond' },
+  { name: 'Tata Consultancy', symbol: 'TCS', quantity: 15, price: 3800.0, value: 57000.0, type: 'stock' },
+  { name: 'Ethereum', symbol: 'ETH', quantity: 1, price: 300000.0, value: 300000.0, type: 'crypto' },
 ];
 
 export const MOCK_BUDGETS: Omit<Budget, 'id'>[] = [
-  { category: 'Food', limit: 500, spent: 320.50 },
-  { category: 'Transport', limit: 200, spent: 110.75 },
-  { category: 'Social', limit: 250, spent: 180.00 },
-  { category: 'Utilities', limit: 150, spent: 125.40 },
-  { category: 'Shopping', limit: 300, spent: 280.99 },
+  { category: 'Food', limit: 8000, spent: 4500.50 },
+  { category: 'Transport', limit: 3000, spent: 1500.75 },
+  { category: 'Social', limit: 5000, spent: 3200.00 },
+  { category: 'Utilities', limit: 4000, spent: 3800.40 },
+  { category: 'Shopping', limit: 6000, spent: 5500.99 },
 ];
 
 const today = new Date();
@@ -36,56 +36,56 @@ export const MOCK_TRANSACTIONS: Omit<Transaction, 'id'>[] = [
     {
         date: format(subDays(today, 1), 'yyyy-MM-dd'),
         description: 'Monthly Salary',
-        amount: 5000,
+        amount: 80000,
         type: 'income',
         category: 'Salary'
     },
     {
         date: format(subDays(today, 2), 'yyyy-MM-dd'),
-        description: 'Grocery Shopping',
-        amount: 75.5,
+        description: 'Zomato Order',
+        amount: 450.5,
         type: 'expense',
         category: 'Food'
     },
     {
         date: format(subDays(today, 3), 'yyyy-MM-dd'),
-        description: 'Train ticket',
-        amount: 25,
+        description: 'Uber ride to office',
+        amount: 280,
         type: 'expense',
         category: 'Transport'
     },
     {
         date: format(subDays(today, 5), 'yyyy-MM-dd'),
-        description: 'Dinner with friends',
-        amount: 120,
+        description: 'Movie tickets and snacks',
+        amount: 1200,
         type: 'expense',
         category: 'Social'
     },
     {
         date: format(subDays(today, 7), 'yyyy-MM-dd'),
         description: 'Electricity Bill',
-        amount: 95,
+        amount: 2100,
         type: 'expense',
         category: 'Utilities'
     },
     {
         date: format(subDays(today, 10), 'yyyy-MM-dd'),
-        description: 'New Jacket',
-        amount: 150,
+        description: 'Myntra Shopping',
+        amount: 3500,
         type: 'expense',
         category: 'Shopping'
     },
     {
         date: format(subDays(today, 12), 'yyyy-MM-dd'),
-        description: 'Stock Investment',
-        amount: 500,
+        description: 'Mutual Fund SIP',
+        amount: 5000,
         type: 'expense',
         category: 'Investment'
     },
     {
         date: format(subDays(today, 14), 'yyyy-MM-dd'),
         description: 'Freelance Project Payment',
-        amount: 750,
+        amount: 15000,
         type: 'income',
         category: 'Freelance'
     }
@@ -150,7 +150,19 @@ export const useInvestments = () => {
         user ? collection(firestore, 'users', user.uid, 'investments') : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Investment>(investmentsQuery);
-    return { investments: data, isLoading, error };
+
+    const investments = useMemo(() => {
+      if (!data) return null;
+      const uniqueInvestments = new Map<string, Investment & {id: string}>();
+      data.forEach(investment => {
+        if (!uniqueInvestments.has(investment.symbol)) {
+            uniqueInvestments.set(investment.symbol, investment);
+        }
+      });
+      return Array.from(uniqueInvestments.values());
+    }, [data]);
+
+    return { investments, isLoading, error };
 };
 
 export const useBudgets = () => {
@@ -253,33 +265,35 @@ export const addTransaction = async (userId: string, transaction: Omit<Transacti
 
 export const getMarketData = () => {
   return [
-    { name: 'AAPL', value: 175, change: 1.2, chartData: [
-      { month: 'Jan', value: 160 }, { month: 'Feb', value: 165 }, { month: 'Mar', value: 170 },
-      { month: 'Apr', value: 168 }, { month: 'May', value: 172 }, { month: 'Jun', value: 175 },
+    { name: 'RELIANCE', value: 2900, change: 1.5, chartData: [
+      { month: 'Jan', value: 2700 }, { month: 'Feb', value: 2750 }, { month: 'Mar', value: 2800 },
+      { month: 'Apr', value: 2850 }, { month: 'May', value: 2875 }, { month: 'Jun', value: 2900 },
     ]},
-    { name: 'TSLA', value: 180, change: -0.5, chartData: [
-      { month: 'Jan', value: 190 }, { month: 'Feb', value: 185 }, { month: 'Mar', value: 182 },
-      { month: 'Apr', value: 188 }, { month: 'May', value: 184 }, { month: 'Jun', value: 180 },
+    { name: 'TCS', value: 3800, change: -0.8, chartData: [
+      { month: 'Jan', value: 3900 }, { month: 'Feb', value: 3850 }, { month: 'Mar', value: 3820 },
+      { month: 'Apr', value: 3880 }, { month: 'May', value: 3840 }, { month: 'Jun', value: 3800 },
     ]},
-    { name: 'BTC', value: 68000, change: 5.5, chartData: [
-      { month: 'Jan', value: 60000 }, { month: 'Feb', value: 62000 }, { month: 'Mar', value: 65000 },
-      { month: 'Apr', value: 63000 }, { month: 'May', avalue: 67000 }, { month: 'Jun', value: 68000 },
+    { name: 'BTC', value: 5700000, change: 4.2, chartData: [
+      { month: 'Jan', value: 5200000 }, { month: 'Feb', value: 5400000 }, { month: 'Mar', value: 5600000 },
+      { month: 'Apr', value: 5500000 }, { month: 'May', value: 5800000 }, { month: 'Jun', value: 5700000 },
     ]},
-    { name: 'ETH', value: 3500, change: 3.1, chartData: [
-        { month: 'Jan', value: 3000 }, { month: 'Feb', value: 3100 }, { month: 'Mar', value: 3200 },
-        { month: 'Apr', value: 3150 }, { month: 'May', value: 3400 }, { month: 'Jun', value: 3500 },
+    { name: 'ETH', value: 300000, change: 2.1, chartData: [
+        { month: 'Jan', value: 280000 }, { month: 'Feb', value: 290000 }, { month: 'Mar', value: 310000 },
+        { month: 'Apr', value: 305000 }, { month: 'May', value: 295000 }, { month: 'Jun', value: 300000 },
       ]},
   ];
 };
 
 export const getExpenseChartData = () => {
     return [
-      { name: "Jan", income: 4000, expenses: 2400 },
-      { name: "Feb", income: 3000, expenses: 1398 },
-      { name: "Mar", income: 5000, expenses: 3800 },
-      { name: "Apr", income: 2780, expenses: 3908 },
-      { name: "May", income: 1890, expenses: 4800 },
-      { name: "Jun", income: 2390, expenses: 3800 },
-      { name: "Jul", income: 3490, expenses: 4300 },
+      { name: "Jan", income: 80000, expenses: 24000 },
+      { name: "Feb", income: 82000, expenses: 31398 },
+      { name: "Mar", income: 75000, expenses: 28800 },
+      { name: "Apr", income: 85000, expenses: 35908 },
+      { name: "May", income: 90000, expenses: 21800 },
+      { name: "Jun", income: 88000, expenses: 36800 },
+      { name: "Jul", income: 92000, expenses: 39300 },
     ]
 }
+
+    

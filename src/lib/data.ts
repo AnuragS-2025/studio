@@ -157,8 +157,8 @@ export const useInvestments = () => {
       if (!data) return null;
       const uniqueInvestments = new Map<string, Investment & {id: string}>();
       data.forEach(investment => {
-        if (!uniqueInvestments.has(investment.symbol)) {
-            uniqueInvestments.set(investment.symbol, investment);
+        if (!uniqueInvestments.has(investment.id)) {
+            uniqueInvestments.set(investment.id, investment);
         }
       });
       return Array.from(uniqueInvestments.values());
@@ -297,6 +297,8 @@ export const getExpenseChartData = () => {
       { name: "Jul", income: 92000, expenses: 39300 },
     ]
 }
+
+    
 
     
 

@@ -12,6 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useInvestments, getMarketData } from '@/lib/data';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+
 
 const initialState = {
   message: '',
@@ -95,7 +98,33 @@ export function AIStockTrader() {
                                 Estimated Profit: <span className="font-bold text-green-500">₹{state.data.potentialProfit.toLocaleString('en-IN')}</span>
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
+                             {state.data.profitAnalysis && state.data.profitAnalysis.length > 0 && (
+                                <div className="space-y-2">
+                                     <h4 className="font-semibold">Profit-Potential Analysis</h4>
+                                     <ChartContainer config={{}} className="w-full h-[250px]">
+                                        <BarChart data={state.data.profitAnalysis} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                            <CartesianGrid vertical={false} />
+                                            <XAxis dataKey="stock" tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                            <YAxis tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `₹${value / 1000}k`} />
+                                            <ChartTooltip
+                                                content={<ChartTooltipContent formatter={(value, name, entry) => (
+                                                    <div>
+                                                        <p className="font-bold text-foreground">{entry.payload.stock}</p>
+                                                        <p className="text-sm text-muted-foreground">Potential Profit: <span className="font-semibold text-foreground">₹{Number(value).toLocaleString()}</span></p>
+                                                    </div>
+                                                )}/>}
+                                            />
+                                            <Bar dataKey="potentialProfit" radius={4}>
+                                                 {state.data.profitAnalysis.map((entry: any) => (
+                                                    <Cell key={`cell-${entry.stock}`} fill={entry.stock === state.data.stockToSell ? "hsl(var(--chart-1))" : "hsl(var(--chart-3))"} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ChartContainer>
+                                </div>
+                             )}
+
                             <Alert>
                                 <Lightbulb className="h-4 w-4" />
                                 <AlertTitle>AI Reasoning</AlertTitle>

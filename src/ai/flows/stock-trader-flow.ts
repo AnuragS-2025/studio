@@ -34,10 +34,16 @@ const AiStockTraderInputSchema = z.object({
 });
 export type AiStockTraderInput = z.infer<typeof AiStockTraderInputSchema>;
 
+const ProfitAnalysisItemSchema = z.object({
+    stock: z.string().describe("The stock symbol."),
+    potentialProfit: z.number().describe("The potential profit from selling this stock.")
+});
+
 const AiStockTraderOutputSchema = z.object({
   stockToSell: z.string().describe("The symbol of the stock recommended to be sold."),
   reasoning: z.string().describe("A detailed explanation for why this stock was recommended for selling to maximize profit."),
   potentialProfit: z.number().describe("The estimated profit from selling the recommended stock."),
+  profitAnalysis: z.array(ProfitAnalysisItemSchema).describe("An array of objects for a bar chart comparing potential profits for the top 3-5 stocks.")
 });
 export type AiStockTraderOutput = z.infer<typeof AiStockTraderOutputSchema>;
 
@@ -63,7 +69,9 @@ const prompt = ai.definePrompt({
   - Name: {{{name}}}, Current Price: ₹{{{value}}}, Daily Change: {{{change}}}%
   {{/each}}
 
-  Based on the user's portfolio and the market data, identify the single best stock to sell to maximize profit. Provide the stock symbol, a detailed reasoning for your choice (considering factors like current gains, market trends, and potential for future decline), and the estimated potential profit from the sale.
+  Based on the user's portfolio and the market data, identify the single best stock to sell to maximize profit. 
+  1. Provide the stock symbol, a detailed reasoning for your choice (considering factors like current gains, market trends, and potential for future decline), and the estimated potential profit from the sale.
+  2. Also, provide data for a 'profitAnalysis' bar chart. This should be an array comparing the potential profit for the top 3-5 stocks from the user's portfolio if they were sold today.
 `,
 });
 

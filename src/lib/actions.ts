@@ -289,3 +289,40 @@ export async function removeTransactionAction(prevState: any, formData: FormData
         };
     }
 }
+
+const removeInvestmentSchema = z.object({
+    investmentId: z.string().min(1, 'Investment ID is required.'),
+    userId: z.string().min(1, 'User ID is required.'),
+});
+
+export async function removeInvestmentAction(prevState: any, formData: FormData) {
+    const validatedFields = removeInvestmentSchema.safeParse({
+        investmentId: formData.get('investmentId'),
+        userId: formData.get('userId'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+            data: null,
+        };
+    }
+
+    try {
+        revalidatePath('/');
+        return { 
+            message: 'Success',
+            errors: null,
+            data: validatedFields.data,
+        };
+    } catch (error) {
+        console.error('Error removing investment:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+            message: `Error removing investment: ${errorMessage}`,
+            errors: null,
+            data: null,
+        };
+    }
+}

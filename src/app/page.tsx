@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { AddIncomeForm } from "./expenses/add-income-form";
 import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
+import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 
 
 export default function Home() {
@@ -324,6 +325,7 @@ export default function Home() {
                     <TableHead className="hidden md:table-cell">Quantity</TableHead>
                     <TableHead className="hidden md:table-cell">Price</TableHead>
                     <TableHead className="text-right">Value</TableHead>
+                    <TableHead className="w-[50px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -348,6 +350,9 @@ export default function Home() {
                       <TableCell className="hidden md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-semibold">
                         ₹{investment.value.toLocaleString('en-IN')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <RemoveInvestmentButton investmentId={investment.id} />
                       </TableCell>
                     </TableRow>
                   ))}

@@ -71,16 +71,23 @@ export default function Home() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.substring(1);
-      if (hash === 'goals') {
+      const hash = window.location.hash;
+      if (hash === '#goals') {
         setActiveTab('goals');
-      } else if (hash === 'advisor') {
+      } else if (hash === '#advisor') {
         setActiveTab('advisor');
       }
     };
 
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
+
+    // If the hash is #goals on initial load, set the tab
+    if(window.location.hash === '#goals') {
+      setActiveTab('goals');
+    }
+
+
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
@@ -89,7 +96,7 @@ export default function Home() {
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
-  const displayedTransactions = showAllTransactions ? transactions : transactions?.slice(0, 3);
+  const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
 
   const expenseChartConfig = {
@@ -169,7 +176,7 @@ export default function Home() {
           </div>
           
            {/* AI Hub Section */}
-           <section id="advisor" className="space-y-4 scroll-m-24">
+           <section id="advisor" className="space-y-4 scroll-m-20">
            <Card className="bg-gradient-primary-accent border-primary/20 shadow-lg">
              <CardHeader className="text-center">
                <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">

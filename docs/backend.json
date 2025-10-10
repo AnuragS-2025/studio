@@ -61,9 +61,14 @@
                 "quantity": { "type": "number" },
                 "price": { "type": "number" },
                 "value": { "type": "number" },
-                "type": { "type": "string", "enum": ["stock", "bond", "crypto"] }
+                "type": { "type": "string", "enum": ["stock", "bond", "crypto"] },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The timestamp when the investment was added."
+                }
             },
-            "required": ["name", "symbol", "quantity", "price", "value", "type"]
+            "required": ["name", "symbol", "quantity", "price", "value", "type", "createdAt"]
         },
         "Budget": {
             "$schema": "http://json-schema.org/draft-07/schema#",

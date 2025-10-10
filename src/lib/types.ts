@@ -11,6 +11,7 @@ export type Investment = {
   price: number;
   value: number;
   type: 'stock' | 'bond' | 'crypto';
+  createdAt: any;
 };
 
 export type Transaction = {

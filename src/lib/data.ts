@@ -16,13 +16,13 @@ const MOCK_USER: User = {
 };
 
 export const MOCK_INVESTMENTS: Omit<Investment, 'id'>[] = [
-  { name: 'Reliance Industries', symbol: 'RELIANCE', quantity: 10, price: 2950.0, value: 29500.0, type: 'stock' },
-  { name: 'Tata Consultancy', symbol: 'TCS', quantity: 15, price: 3850.0, value: 57750.0, type: 'stock' },
-  { name: 'HDFC Bank', symbol: 'HDFCBANK', quantity: 25, price: 1680.0, value: 42000.0, type: 'stock' },
-  { name: 'Infosys', symbol: 'INFY', quantity: 30, price: 1550.0, value: 46500.0, type: 'stock' },
-  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.05, price: 5800000.0, value: 290000.0, type: 'crypto' },
-  { name: 'Ethereum', symbol: 'ETH', quantity: 1, price: 310000.0, value: 310000.0, type: 'crypto' },
-  { name: 'India Gov. Bond 2033', symbol: 'IN071833G', quantity: 5, price: 102.5, value: 512.5, type: 'bond' },
+  { name: 'Reliance Industries', symbol: 'RELIANCE', quantity: 10, price: 2950.0, value: 29500.0, type: 'stock', createdAt: new Date() },
+  { name: 'Tata Consultancy', symbol: 'TCS', quantity: 15, price: 3850.0, value: 57750.0, type: 'stock', createdAt: new Date() },
+  { name: 'HDFC Bank', symbol: 'HDFCBANK', quantity: 25, price: 1680.0, value: 42000.0, type: 'stock', createdAt: new Date() },
+  { name: 'Infosys', symbol: 'INFY', quantity: 30, price: 1550.0, value: 46500.0, type: 'stock', createdAt: new Date() },
+  { name: 'Bitcoin', symbol: 'BTC', quantity: 0.05, price: 5800000.0, value: 290000.0, type: 'crypto', createdAt: new Date() },
+  { name: 'Ethereum', symbol: 'ETH', quantity: 1, price: 310000.0, value: 310000.0, type: 'crypto', createdAt: new Date() },
+  { name: 'India Gov. Bond 2033', symbol: 'IN071833G', quantity: 5, price: 102.5, value: 512.5, type: 'bond', createdAt: new Date() },
 ];
 
 export const MOCK_BUDGETS: Omit<Budget, 'id'>[] = [
@@ -149,7 +149,7 @@ export const useInvestments = () => {
     const firestore = useFirestore();
     const { user } = useUser();
     const investmentsQuery = useMemoFirebase(() =>
-        user ? query(collection(firestore, 'users', user.uid, 'investments'), orderBy('name')) : null
+        user ? query(collection(firestore, 'users', user.uid, 'investments'), orderBy('createdAt', 'desc')) : null
     , [firestore, user]);
     const { data, isLoading, error } = useCollection<Investment>(investmentsQuery);
 

@@ -74,7 +74,7 @@ export function Header() {
           href="#budget"
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
-          Budget Tool
+          Budget
         </Link>
         <Link
           href="#goals"

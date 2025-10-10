@@ -15,9 +15,67 @@
                     "type": "string",
                     "description": "The email address of the user.",
                     "format": "email"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The timestamp when the user profile was created."
                 }
             },
-            "required": ["displayName", "email"]
+            "required": ["displayName", "email", "createdAt"]
+        },
+        "Stock": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Stock",
+            "type": "object",
+            "description": "Represents real-time data for a single stock.",
+            "properties": {
+                "symbol": { "type": "string" },
+                "price": { "type": "number" },
+                "change": { "type": "number" },
+                "changePercent": { "type": "number" },
+                "volume": { "type": "string" },
+                "timestamp": { "type": "string", "format": "date-time" }
+            },
+            "required": ["symbol", "price", "timestamp"]
+        },
+        "HistoricalPrice": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HistoricalPrice",
+            "type": "object",
+            "description": "Represents a single historical price point for a stock.",
+            "properties": {
+                "date": { "type": "string", "format": "date" },
+                "open": { "type": "number" },
+                "high": { "type": "number" },
+                "low": { "type": "number" },
+                "close": { "type": "number" },
+                "volume": { "type": "number" }
+            },
+            "required": ["date", "open", "high", "low", "close"]
+        },
+        "PortfolioItem": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "PortfolioItem",
+            "type": "object",
+            "description": "Represents a single asset holding in a user's portfolio.",
+            "properties": {
+                "symbol": { "type": "string" },
+                "quantity": { "type": "number" },
+                "averagePrice": { "type": "number" }
+            },
+            "required": ["symbol", "quantity", "averagePrice"]
+        },
+        "WatchlistItem": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "WatchlistItem",
+            "type": "object",
+            "description": "Represents a stock in a user's watchlist.",
+            "properties": {
+                "symbol": { "type": "string" },
+                "addedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["symbol", "addedAt"]
         },
         "Transaction": {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -25,75 +83,29 @@
             "type": "object",
             "description": "Represents a single financial transaction.",
             "properties": {
-                "date": {
-                    "type": "string",
-                    "description": "The date of the transaction in YYYY-MM-DD format.",
-                    "format": "date"
-                },
-                "description": {
-                    "type": "string",
-                    "description": "A description of the transaction."
-                },
-                "amount": {
-                    "type": "number",
-                    "description": "The amount of the transaction."
-                },
-                "type": {
-                    "type": "string",
-                    "enum": ["income", "expense"],
-                    "description": "The type of transaction."
-                },
-                "category": {
-                    "type": "string",
-                    "description": "The category of the transaction."
-                }
-            },
-            "required": ["date", "description", "amount", "type", "category"]
-        },
-        "Investment": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Investment",
-            "type": "object",
-            "description": "Represents an individual asset within an investment portfolio.",
-            "properties": {
-                "name": { "type": "string" },
                 "symbol": { "type": "string" },
+                "type": { "type": "string", "enum": ["buy", "sell"] },
                 "quantity": { "type": "number" },
                 "price": { "type": "number" },
-                "value": { "type": "number" },
-                "type": { "type": "string", "enum": ["stock", "bond", "crypto"] },
-                "createdAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "The timestamp when the investment was added."
+                "date": { "type": "string", "format": "date-time" }
+            },
+            "required": ["symbol", "type", "quantity", "price", "date"]
+        },
+        "UserPreferences": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "UserPreferences",
+            "type": "object",
+            "description": "Stores user-specific settings.",
+            "properties": {
+                "theme": { "type": "string", "enum": ["light", "dark", "system"], "default": "system" },
+                "notifications": {
+                    "type": "object",
+                    "properties": {
+                        "priceAlerts": { "type": "boolean", "default": true },
+                        "newsAlerts": { "type": "boolean", "default": false }
+                    }
                 }
-            },
-            "required": ["name", "symbol", "quantity", "price", "value", "type", "createdAt"]
-        },
-        "Budget": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Budget",
-            "type": "object",
-            "description": "Represents a budget for a user.",
-            "properties": {
-                "category": { "type": "string" },
-                "limit": { "type": "number" },
-                "spent": { "type": "number" }
-            },
-            "required": ["category", "limit", "spent"]
-        },
-        "FinancialGoal": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "FinancialGoal",
-            "type": "object",
-            "description": "Represents a financial goal set by a user.",
-            "properties": {
-                "goalName": { "type": "string" },
-                "targetAmount": { "type": "number" },
-                "targetDate": { "type": "string", "format": "date-time" },
-                "currentSavedAmount": { "type": "number" }
-            },
-            "required": ["goalName", "targetAmount", "targetDate"]
+            }
         }
     },
     "auth": {
@@ -102,29 +114,39 @@
     "firestore": {
         "collections": [
             {
+                "path": "/stocks/{symbol}",
+                "schema": { "$ref": "#/entities/Stock" },
+                "description": "Stores real-time data for publicly traded stocks."
+            },
+            {
+                "path": "/stocks/{symbol}/historicalData/{dataId}",
+                "schema": { "$ref": "#/entities/HistoricalPrice" },
+                "description": "Stores historical price data for a specific stock."
+            },
+            {
                 "path": "/users/{userId}",
                 "schema": { "$ref": "#/entities/UserProfile" },
                 "description": "Stores user profile information."
             },
             {
+                "path": "/users/{userId}/portfolio/{investmentId}",
+                "schema": { "$ref": "#/entities/PortfolioItem" },
+                "description": "Stores the user's individual stock holdings."
+            },
+            {
+                "path": "/users/{userId}/watchlist/{symbol}",
+                "schema": { "$ref": "#/entities/WatchlistItem" },
+                "description": "Stores the user's watchlist of stocks."
+            },
+            {
                 "path": "/users/{userId}/transactions/{transactionId}",
                 "schema": { "$ref": "#/entities/Transaction" },
-                "description": "Stores all financial transactions for a user."
+                "description": "Stores a history of all buy/sell transactions for a user."
             },
             {
-                "path": "/users/{userId}/investments/{investmentId}",
-                "schema": { "$ref": "#/entities/Investment" },
-                "description": "Stores all investments for a user."
-            },
-            {
-                "path": "/users/{userId}/budgets/{budgetId}",
-                "schema": { "$ref": "#/entities/Budget" },
-                "description": "Stores all budgets for a user."
-            },
-            {
-                "path": "/users/{userId}/financialGoals/{goalId}",
-                "schema": { "$ref": "#/entities/FinancialGoal" },
-                "description": "Stores all financial goals for a user."
+                "path": "/users/{userId}/preferences/{preferenceId}",
+                "schema": { "$ref": "#/entities/UserPreferences" },
+                "description": "Stores user-specific application preferences."
             }
         ]
     }

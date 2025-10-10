@@ -53,9 +53,10 @@ export default function LoginPage() {
             await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
         } catch (error: any) {
-            let description = "No account found with this email and password combination. Please check your credentials or sign up.";
+            let description = "An unexpected error occurred. Please try again.";
+            
             if (error.code === 'auth/invalid-credential') {
-                description = "No account found with this email and password combination. Please check your credentials or sign up.";
+                 description = "No account found with this email and password combination. Please check your credentials or sign up.";
             }
 
             toast({
@@ -83,7 +84,7 @@ export default function LoginPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await addSampleData(userCredential.user.uid);
             router.push('/');
-        } catch (error: any) => {
+        } catch (error: any) {
             let description = "An unexpected error occurred.";
             if (error.code === 'auth/email-already-in-use') {
                 description = "An account with this email already exists. Please sign in.";
@@ -159,5 +160,3 @@ export default function LoginPage() {
         </div>
     )
 }
-
-    

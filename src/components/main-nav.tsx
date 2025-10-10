@@ -11,6 +11,7 @@ import {
   GanttChartSquare,
   Sparkles,
   Target,
+  BrainCircuit,
 } from "lucide-react";
 import { Icons } from "./icons";
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: "#dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "#portfolio", icon: Wallet, label: "Portfolio" },
   { href: "#market", icon: CandlestickChart, label: "Market" },
+  { href: "#ai-trader", icon: BrainCircuit, label: "AI Trader" },
   { href: "#expenses", icon: PiggyBank, label: "Expenses" },
   { href: "#budget", icon: GanttChartSquare, label: "Budget" },
   { href: "#advisor", icon: Sparkles, label: "AI Advisor" },

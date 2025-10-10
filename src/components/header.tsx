@@ -16,7 +16,8 @@ import {
   CandlestickChart,
   PiggyBank,
   GanttChartSquare,
-  LayoutDashboard
+  LayoutDashboard,
+  BrainCircuit,
 } from "lucide-react";
 
 import {
@@ -64,6 +65,12 @@ export function Header() {
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
           Market
+        </Link>
+        <Link
+          href="#ai-trader"
+          className="text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
+        >
+          AI Trader
         </Link>
         <Link
           href="#expenses"

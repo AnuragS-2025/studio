@@ -72,17 +72,42 @@ export function AIStockTrader() {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="grid gap-6 md:grid-cols-2">
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center gap-4">
                 <Calendar
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    className="rounded-md border"
+                    className="rounded-md border self-center"
                     disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                 />
                 <input type="hidden" name="analysisDate" value={date ? format(date, 'yyyy-MM-dd') : ''} />
                 <input type="hidden" name="investments" value={JSON.stringify(investments || [])} />
                 <input type="hidden" name="marketData" value={JSON.stringify(marketData || [])} />
+                 {state.data?.profitAnalysis && state.data.profitAnalysis.length > 0 && (
+                    <div className="space-y-2 w-full">
+                         <h4 className="font-semibold text-center">Profit-Potential Analysis</h4>
+                         <ChartContainer config={{}} className="w-full h-[250px]">
+                            <BarChart data={state.data.profitAnalysis} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="stock" tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                <YAxis tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `₹${value / 1000}k`} />
+                                <ChartTooltip
+                                    content={<ChartTooltipContent formatter={(value, name, entry) => (
+                                        <div>
+                                            <p className="font-bold text-foreground">{entry.payload.stock}</p>
+                                            <p className="text-sm text-muted-foreground">Potential Profit: <span className="font-semibold text-foreground">₹{Number(value).toLocaleString()}</span></p>
+                                        </div>
+                                    )}/>}
+                                />
+                                <Bar dataKey="potentialProfit" radius={4}>
+                                     {state.data.profitAnalysis.map((entry: any) => (
+                                        <Cell key={`cell-${entry.stock}`} fill={entry.stock === state.data.stockToSell ? "hsl(var(--chart-1))" : "hsl(var(--chart-3))"} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ChartContainer>
+                    </div>
+                 )}
             </div>
 
             <div className="space-y-4">
@@ -99,32 +124,6 @@ export function AIStockTrader() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             {state.data.profitAnalysis && state.data.profitAnalysis.length > 0 && (
-                                <div className="space-y-2">
-                                     <h4 className="font-semibold">Profit-Potential Analysis</h4>
-                                     <ChartContainer config={{}} className="w-full h-[250px]">
-                                        <BarChart data={state.data.profitAnalysis} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis dataKey="stock" tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                                            <YAxis tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `₹${value / 1000}k`} />
-                                            <ChartTooltip
-                                                content={<ChartTooltipContent formatter={(value, name, entry) => (
-                                                    <div>
-                                                        <p className="font-bold text-foreground">{entry.payload.stock}</p>
-                                                        <p className="text-sm text-muted-foreground">Potential Profit: <span className="font-semibold text-foreground">₹{Number(value).toLocaleString()}</span></p>
-                                                    </div>
-                                                )}/>}
-                                            />
-                                            <Bar dataKey="potentialProfit" radius={4}>
-                                                 {state.data.profitAnalysis.map((entry: any) => (
-                                                    <Cell key={`cell-${entry.stock}`} fill={entry.stock === state.data.stockToSell ? "hsl(var(--chart-1))" : "hsl(var(--chart-3))"} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ChartContainer>
-                                </div>
-                             )}
-
                             <Alert>
                                 <Lightbulb className="h-4 w-4" />
                                 <AlertTitle>AI Reasoning</AlertTitle>

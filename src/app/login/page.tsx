@@ -77,9 +77,9 @@ export default function LoginPage() {
         } catch (error: any) {
             let description = "An unexpected error occurred.";
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                description = "No account found with this email and password combination. Please check your credentials or sign up.";
+                description = "User Account not Found";
             } else if (error.code === 'auth/wrong-password') {
-                description = "The password you entered is incorrect. Please try again.";
+                description = "Incorrect password, Try Again!";
             } else {
                 description = error.message;
             }

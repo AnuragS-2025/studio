@@ -169,7 +169,7 @@ export default function Home() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="flex items-center justify-center">
-                 <Icons.bull className="h-16 w-16 text-green-500 animate-breath" />
+                 <Icons.bull className="h-16 w-16 text-green-500" />
               </CardContent>
             </Card>
           </div>
@@ -628,3 +628,4 @@ export default function Home() {
   );
 
     
+

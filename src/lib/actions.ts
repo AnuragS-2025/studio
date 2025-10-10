@@ -9,6 +9,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { aiStockTrader, AiStockTraderInput } from '@/ai/flows/stock-trader-flow';
+
 
 const aiFinancialAdvisorSchema = z.object({
   financialData: z.string().min(10, "Please provide more details about your financial situation."),
@@ -325,4 +327,65 @@ export async function removeInvestmentAction(prevState: any, formData: FormData)
             data: null,
         };
     }
+}
+
+
+const investmentSchema = z.object({
+    name: z.string(),
+    symbol: z.string(),
+    quantity: z.number(),
+    price: z.number(),
+    value: z.number(),
+    type: z.string(),
+});
+
+const marketDataSchema = z.object({
+    name: z.string(),
+    value: z.number(),
+    change: z.number(),
+});
+
+const aiStockTraderSchema = z.object({
+    investments: z.string(),
+    marketData: z.string(),
+    analysisDate: z.string(),
+});
+
+
+export async function getStockTradeSuggestion(prevState: any, formData: FormData) {
+  const validatedFields = aiStockTraderSchema.safeParse({
+    investments: formData.get('investments'),
+    marketData: formData.get('marketData'),
+    analysisDate: formData.get('analysisDate'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const input: AiStockTraderInput = {
+        investments: JSON.parse(validatedFields.data.investments),
+        marketData: JSON.parse(validatedFields.data.marketData),
+        analysisDate: validatedFields.data.analysisDate
+    }
+    const result = await aiStockTrader(input);
+    return {
+      message: 'Success',
+      errors: null,
+      data: result,
+    };
+  } catch (error) {
+    console.log(error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return {
+      message: `An error occurred while getting stock suggestions: ${errorMessage}`,
+      errors: null,
+      data: null,
+    };
+  }
 }

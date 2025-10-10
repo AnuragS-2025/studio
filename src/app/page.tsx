@@ -49,6 +49,7 @@ import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
+import { AIStockTrader } from "./portfolio/ai-stock-trader";
 
 
 export default function Home() {
@@ -290,74 +291,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Portfolio Section */}
-        <section id="portfolio" className="space-y-4 scroll-m-20">
-          <div className="flex items-center">
-            <div className="grid gap-2">
-                <h2 className="text-3xl font-bold tracking-tight">Portfolio</h2>
-                <p className="text-muted-foreground">
-                    Total Value: <span className="font-bold text-foreground">₹{portfolioValue.toLocaleString('en-IN')}</span>
-                </p>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <AddInvestmentForm />
-            </div>
-          </div>
-          <Card>
-            <CardContent className="p-0">
-              {investmentsLoading ? (
-                <div className="space-y-2 p-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Asset</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="hidden md:table-cell">Quantity</TableHead>
-                    <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="text-right">Value</TableHead>
-                    <TableHead className="w-[50px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {investments?.map((investment) => (
-                    <TableRow key={investment.id}>
-                      <TableCell className="align-middle">
-                        <div className="font-medium">{investment.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {investment.symbol}
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-middle">
-                        <Badge variant="outline" className={cn(
-                            investment.type === 'stock' && 'border-sky-500 text-sky-500',
-                            investment.type === 'crypto' && 'border-amber-500 text-amber-500',
-                            investment.type === 'bond' && 'border-lime-500 text-lime-500',
-                        )}>
-                          {investment.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden align-middle md:table-cell">{investment.quantity}</TableCell>
-                      <TableCell className="hidden align-middle md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-semibold align-middle">
-                        ₹{investment.value.toLocaleString('en-IN')}
-                      </TableCell>
-                      <TableCell className="text-right align-middle">
-                        <RemoveInvestmentButton investmentId={investment.id} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
         {/* Market Section */}
         <section id="market" className="space-y-4 scroll-m-20">
             <Card>
@@ -448,6 +381,79 @@ export default function Home() {
                 </Table>
                 </CardContent>
             </Card>
+        </section>
+
+        {/* AI Stock Trader Section */}
+        <section id="ai-trader" className="space-y-4 scroll-m-20">
+          <AIStockTrader />
+        </section>
+
+        {/* Portfolio Section */}
+        <section id="portfolio" className="space-y-4 scroll-m-20">
+          <div className="flex items-center">
+            <div className="grid gap-2">
+                <h2 className="text-3xl font-bold tracking-tight">Portfolio</h2>
+                <p className="text-muted-foreground">
+                    Total Value: <span className="font-bold text-foreground">₹{portfolioValue.toLocaleString('en-IN')}</span>
+                </p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <AddInvestmentForm />
+            </div>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              {investmentsLoading ? (
+                <div className="space-y-2 p-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Asset</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="hidden md:table-cell">Quantity</TableHead>
+                    <TableHead className="hidden md:table-cell">Price</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                    <TableHead className="w-[50px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {investments?.map((investment) => (
+                    <TableRow key={investment.id}>
+                      <TableCell className="align-middle">
+                        <div className="font-medium">{investment.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {investment.symbol}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-middle">
+                        <Badge variant="outline" className={cn(
+                            investment.type === 'stock' && 'border-sky-500 text-sky-500',
+                            investment.type === 'crypto' && 'border-amber-500 text-amber-500',
+                            investment.type === 'bond' && 'border-lime-500 text-lime-500',
+                        )}>
+                          {investment.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden align-middle md:table-cell">{investment.quantity}</TableCell>
+                      <TableCell className="hidden align-middle md:table-cell">₹{investment.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold align-middle">
+                        ₹{investment.value.toLocaleString('en-IN')}
+                      </TableCell>
+                      <TableCell className="text-right align-middle">
+                        <RemoveInvestmentButton investmentId={investment.id} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
         {/* Expenses Section */}
@@ -558,58 +564,68 @@ export default function Home() {
 
         {/* Budget Section */}
         <section id="budget" className="space-y-4 scroll-m-20">
-            <div className="flex items-center">
-                <div className="grid gap-2">
-                    <h2 className="text-3xl font-bold tracking-tight">Budget Tool</h2>
-                    <p className="text-muted-foreground">
-                        Manage and track your spending against your budget limits.
-                    </p>
-                </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-               <Card className="col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between pb-4">
-                    <CardTitle>Optimize Your Budget</CardTitle>
-                    <Button asChild size="sm" className="ml-auto gap-1">
-                        <Link href="#advisor">
-                            Ask AI Advisor
-                            <ArrowUpRight className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">
-                        Get AI-driven recommendations for optimization.
-                    </p>
-                </CardContent>
-              </Card>
-              {budgetsLoading ? (
-                <>
-                  <Skeleton className="h-44 w-full" />
-                  <Skeleton className="h-44 w-full" />
-                  <Skeleton className="h-44 w-full" />
-                </>
-              ) : budgets?.map((budget) => {
-                const progress = (budget.spent / budget.limit) * 100;
-                return (
-                  <Card key={budget.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{budget.category}</CardTitle>
-                      <CardDescription>
-                        <span className="font-semibold">₹{budget.spent.toFixed(2)}</span> spent of ₹{budget.limit.toFixed(2)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Progress value={progress} className="h-2 [&>div]:bg-primary" />
-                    </CardContent>
-                    <CardFooter>
-                      <p className="text-xs text-muted-foreground">{progress.toFixed(0)}% of your budget used</p>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-            </div>
-        </section>
+           <div className="flex items-center">
+             <div className="grid gap-2">
+               <h2 className="text-3xl font-bold tracking-tight">Budget Tool</h2>
+               <p className="text-muted-foreground">
+                 Manage and track your spending against your budget limits.
+               </p>
+             </div>
+           </div>
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <Card className="col-span-1">
+               <CardHeader className="flex flex-row items-center justify-between pb-4">
+                 <CardTitle>Optimize Your Budget</CardTitle>
+                 <Button asChild size="sm" className="ml-auto gap-1">
+                   <Link href="#advisor">
+                     Ask AI Advisor
+                     <ArrowUpRight className="h-4 w-4" />
+                   </Link>
+                 </Button>
+               </CardHeader>
+               <CardContent>
+                 <p className="text-xs text-muted-foreground">
+                   Get AI-driven recommendations for optimization.
+                 </p>
+               </CardContent>
+             </Card>
+             {budgetsLoading ? (
+               <>
+                 <Skeleton className="h-44 w-full" />
+                 <Skeleton className="h-44 w-full" />
+                 <Skeleton className="h-44 w-full" />
+               </>
+             ) : (
+               budgets?.map((budget) => {
+                 const progress = (budget.spent / budget.limit) * 100;
+                 return (
+                   <Card key={budget.id}>
+                     <CardHeader className="pb-2">
+                       <CardTitle className="text-lg">{budget.category}</CardTitle>
+                       <CardDescription>
+                         <span className="font-semibold">
+                           ₹{budget.spent.toFixed(2)}
+                         </span>{' '}
+                         spent of ₹{budget.limit.toFixed(2)}
+                       </CardDescription>
+                     </CardHeader>
+                     <CardContent>
+                       <Progress
+                         value={progress}
+                         className="h-2 [&>div]:bg-primary"
+                       />
+                     </CardContent>
+                     <CardFooter>
+                       <p className="text-xs text-muted-foreground">
+                         {progress.toFixed(0)}% of your budget used
+                       </p>
+                     </CardFooter>
+                   </Card>
+                 );
+               })
+             )}
+           </div>
+         </section>
       </main>
     </div>
   );

@@ -69,7 +69,7 @@ export default function Home() {
 
   const topMovers = marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
-  const displayedTransactions = showAllTransactions ? transactions : transactions?.slice(0, 3);
+  const displayedTransactions = showAllTransactions ? transactions?.slice(0, 3) : transactions?.slice(0, 3);
 
 
   const expenseChartConfig = {
@@ -92,7 +92,7 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col">
       <main className="flex flex-1 flex-col gap-4">
         {/* Dashboard Section */}
-        <section id="dashboard" className="space-y-4">
+        <section id="dashboard" className="space-y-4 scroll-m-20">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -149,7 +149,7 @@ export default function Home() {
           </div>
           
            {/* AI Hub Section */}
-           <section id="advisor" className="space-y-4">
+           <section id="advisor" className="space-y-4 scroll-m-20">
            <Card className="bg-gradient-primary-accent border-primary/20 shadow-lg">
              <CardHeader className="text-center">
                <CardTitle className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
@@ -264,7 +264,7 @@ export default function Home() {
         </section>
 
         {/* Portfolio Section */}
-        <section id="portfolio" className="space-y-4">
+        <section id="portfolio" className="space-y-4 scroll-m-20">
           <div className="flex items-center">
             <div className="grid gap-2">
                 <h2 className="text-3xl font-bold tracking-tight">Portfolio</h2>
@@ -332,7 +332,7 @@ export default function Home() {
         </section>
 
         {/* Market Section */}
-        <section id="market" className="space-y-4">
+        <section id="market" className="space-y-4 scroll-m-20">
             <Card>
                 <CardHeader>
                 <CardTitle>Market Analysis</CardTitle>
@@ -424,7 +424,7 @@ export default function Home() {
         </section>
 
         {/* Expenses Section */}
-        <section id="expenses" className="space-y-4">
+        <section id="expenses" className="space-y-4 scroll-m-20">
            <div className="flex items-center">
             <div className="grid gap-2">
                 <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
@@ -530,7 +530,7 @@ export default function Home() {
         </section>
 
         {/* Budget Section */}
-        <section id="budget" className="space-y-4">
+        <section id="budget" className="space-y-4 scroll-m-20">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                <Card className="lg:col-span-1">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -582,6 +582,8 @@ export default function Home() {
 
     
 
+
+    
 
     
 

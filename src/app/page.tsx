@@ -566,8 +566,8 @@ export default function Home() {
                     </p>
                 </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-               <Card className="lg:col-span-1">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+               <Card className="col-span-1">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                     <CardTitle>Optimize Your Budget</CardTitle>
                     <Button asChild size="sm" className="ml-auto gap-1">

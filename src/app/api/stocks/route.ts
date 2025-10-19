@@ -1,5 +1,6 @@
 
 import { NextResponse } from 'next/server';
+import 'dotenv/config';
 
 const SYMBOL_MAP: { [key: string]: string } = {
     'RELIANCE': 'RELIANCE.BSE',
@@ -22,8 +23,8 @@ export async function GET(request: Request) {
     const symbolsQuery = searchParams.get('symbols');
     const apiKey = process.env.ALPHAVANTAGE_API_KEY;
 
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-        return NextResponse.json({ error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file.' }, { status: 500 });
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE' || apiKey === 'ALPHAVANTAGE_API_KEY') {
+        return NextResponse.json({ error: 'API key is not configured. Please add ALPHAVANTage_API_KEY to your .env file.' }, { status: 500 });
     }
 
     if (!symbolsQuery) {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
             if (data['Global Quote']) {
                 const quote = data['Global Quote'];
                 const price = parseFloat(quote['05. price']);
-                const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+                const changePercent = parseFloat(quote['10. change percent']);
 
                 if (!isNaN(price) && !isNaN(changePercent)) {
                     stockData[appSymbol] = {

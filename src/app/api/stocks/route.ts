@@ -20,7 +20,6 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const symbolsQuery = searchParams.get('symbols');
-    // In Next.js App Router API Routes, access environment variables via process.env
     const apiKey = process.env.ALPHAVANTAGE_API_KEY;
 
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE' || apiKey.includes('ALPHAVANTAGE_API_KEY')) {
@@ -44,9 +43,9 @@ export async function GET(request: Request) {
 
             if (data['Global Quote']) {
                 const quote = data['Global Quote'];
-                // Use the correct keys from the API response
                 const price = parseFloat(quote['05. price']);
-                const changePercent = parseFloat(quote['10. change percent']);
+                const changePercentString = quote['10. change percent'];
+                const changePercent = parseFloat(changePercentString.replace('%', ''));
 
                 if (!isNaN(price) && !isNaN(changePercent)) {
                     stockData[appSymbol] = {
@@ -57,10 +56,8 @@ export async function GET(request: Request) {
                      stockData[appSymbol] = { error: `Invalid data for ${appSymbol}` };
                 }
             } else if (data.Note) {
-                 // This handles the API call frequency limit
                 stockData[appSymbol] = { error: `API call limit reached for ${appSymbol}` };
-                 // If we hit the limit, wait before the next call
-                await delay(15000); // Wait 15 seconds
+                await delay(15000); 
             } 
             else {
                 stockData[appSymbol] = { error: `No data found for ${appSymbol}` };
@@ -70,9 +67,7 @@ export async function GET(request: Request) {
             stockData[appSymbol] = { error: `Failed to fetch data for ${appSymbol}: ${message}` };
         }
         
-        // Alpha Vantage has a rate limit of 5 calls per minute for the free tier. 
-        // Adding a delay between calls to respect this limit.
-        await delay(13000); // ~13 seconds delay between each API call
+        await delay(13000);
     }
 
     return NextResponse.json(stockData);

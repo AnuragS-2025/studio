@@ -141,11 +141,13 @@ export default function Home() {
             errorMessage = liveData.error;
         }
         console.error('Failed to fetch stock data from API route:', errorMessage);
-        toast({
-            variant: "destructive",
-            title: "API Error",
-            description: errorMessage,
-        });
+        if (errorMessage.includes("API key is not configured")) {
+            toast({
+                variant: "destructive",
+                title: "API Key Missing",
+                description: "Your Alpha Vantage API key is not configured. Please add it to the .env file and restart the server.",
+            });
+        }
         setIsMarketDataLoading(false);
         return;
       }
@@ -210,7 +212,7 @@ export default function Home() {
   
   useEffect(() => {
     updateData(); // Initial fetch
-    const intervalId = setInterval(updateData, 900000); // Fetch every 15 minutes
+    const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [updateData]);
@@ -770,6 +772,8 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
 

@@ -117,89 +117,93 @@ export default function Home() {
     return data;
   };
 
- useEffect(() => {
-    const updateData = async () => {
-      // Don't run if investments are loading for the first time, but allow subsequent fetches
-      if (investmentsLoading && !marketData.length) return;
+  const updateData = useCallback(async () => {
+    if (investmentsLoading) return;
 
-      const investmentSymbols = investments?.map(inv => inv.symbol) || [];
-      const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
-      const allSymbols = Array.from(allSymbolsSet).join(',');
+    const investmentSymbols = investments?.map(inv => inv.symbol) || [];
+    const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
+    const allSymbols = Array.from(allSymbolsSet).join(',');
 
-      if (!allSymbols) {
+    if (!allSymbols) {
+      setIsMarketDataLoading(false);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+      if (!response.ok) {
+        console.error('Failed to fetch stock data from API route');
+        setIsMarketDataLoading(false); // Stop loading on API error
+        return;
+      }
+      const liveData = await response.json();
+
+      if (liveData.error) {
+        console.error('Error fetching stock data:', liveData.error);
         setIsMarketDataLoading(false);
         return;
       }
 
-      try {
-        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
-        if (!response.ok) {
-          console.error('Failed to fetch stock data from API route');
-          // Don't set loading to false on a failed refresh, keep stale data
-          return;
-        }
-        const liveData = await response.json();
+      const newMarketData: MarketStock[] = [];
+      const currentMarketData = marketData; // Capture current state for chart data continuity
 
-        if (liveData.error) {
-          console.error('Error fetching stock data:', liveData.error);
-          setIsMarketDataLoading(false);
-          return;
-        }
+      for (const symbol of allSymbolsSet) {
+           const stockInfo = liveData[symbol];
+           if (stockInfo && !stockInfo.error) {
+               const existingStock = currentMarketData.find(s => s.name === symbol);
+               const newChartData = existingStock && existingStock.chartData.length > 0
+                   ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                   : generateChartData(stockInfo.price);
 
-        const newMarketData: MarketStock[] = [];
-        for (const symbol of allSymbolsSet) {
-             const stockInfo = liveData[symbol];
-             if (stockInfo && !stockInfo.error) {
-                 const existingStock = marketData.find(s => s.name === symbol);
-                 const newChartData = existingStock && existingStock.chartData.length > 0
-                     ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                     : generateChartData(stockInfo.price);
+               newMarketData.push({
+                   name: symbol,
+                   price: stockInfo.price,
+                   change: stockInfo.change,
+                   chartData: newChartData
+               });
+           } else if (stockInfo?.error) {
+               console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+               const existingStock = currentMarketData.find(s => s.name === symbol);
+               if (existingStock) {
+                  newMarketData.push(existingStock); // Keep stale data if fetch fails
+               }
+           }
+      }
+      setMarketData(newMarketData);
 
-                 newMarketData.push({
-                     name: symbol,
-                     price: stockInfo.price,
-                     change: stockInfo.change,
-                     chartData: newChartData
-                 });
-             } else if (stockInfo?.error) {
-                 console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-                 const existingStock = marketData.find(s => s.name === symbol);
-                 if (existingStock) {
-                    newMarketData.push(existingStock); // Keep stale data if fetch fails
-                 }
-             }
-        }
-        setMarketData(newMarketData);
+      if (investments && authUser && firestore) {
+          for (const investment of investments) {
+              const marketInfo = liveData[investment.symbol];
+              if (marketInfo && !marketInfo.error) {
+                  const newPrice = marketInfo.price;
+                  const newValue = investment.quantity * newPrice;
 
-        if (investments && authUser && firestore) {
-            for (const investment of investments) {
-                const marketInfo = liveData[investment.symbol];
-                if (marketInfo && !marketInfo.error) {
-                    const newPrice = marketInfo.price;
-                    const newValue = investment.quantity * newPrice;
-
-                    if (newPrice !== investment.price || newValue !== investment.value) {
-                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                        await updateDoc(investmentRef, {
-                            price: newPrice,
-                            value: newValue
-                        });
-                    }
-                }
-            }
-        }
-      } catch (error) {
-        console.error("Failed to fetch or parse stock data:", error);
-      } finally {
+                  if (newPrice !== investment.price || newValue !== investment.value) {
+                      const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                      await updateDoc(investmentRef, {
+                          price: newPrice,
+                          value: newValue
+                      });
+                  }
+              }
+          }
+      }
+    } catch (error) {
+      console.error("Failed to fetch or parse stock data:", error);
+    } finally {
+      // Only set loading to false after the first fetch completes.
+      if (isMarketDataLoading) {
         setIsMarketDataLoading(false);
       }
-    };
-    
+    }
+  }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData]);
+  
+  useEffect(() => {
     updateData(); // Initial fetch
     const intervalId = setInterval(updateData, 5 * 60 * 1000); // Fetch every 5 minutes
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [investmentsLoading, investments, authUser, firestore]);
+  }, [updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));

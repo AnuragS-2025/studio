@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -229,7 +228,6 @@ export default function Home() {
 
       isFetching.current = false;
       setIsMarketDataLoading(false);
-
   }, [investments, authUser, firestore, toast]);
   
   useEffect(() => {

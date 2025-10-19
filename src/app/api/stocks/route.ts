@@ -41,7 +41,7 @@ export async function GET(request: Request) {
             const response = await fetch(url);
             const data = await response.json();
 
-            if (data['Global Quote']) {
+            if (data['Global Quote'] && data['Global Quote']['05. price']) {
                 const quote = data['Global Quote'];
                 const price = parseFloat(quote['05. price']);
                 const changePercentString = quote['10. change percent'];
@@ -57,10 +57,10 @@ export async function GET(request: Request) {
                 }
             } else if (data.Note) {
                 // This handles the API call frequency limit note from Alpha Vantage
-                // We log it and will wait before the next iteration
+                console.warn(`Alpha Vantage API call limit reached for ${appSymbol}. Waiting before retrying or continuing.`);
                 stockData[appSymbol] = { error: `API call limit reached for ${appSymbol}` };
                 await delay(15000); // Wait for 15 seconds if we hit a rate limit note
-            } 
+            }
             else {
                 stockData[appSymbol] = { error: `No data found for ${appSymbol}` };
             }

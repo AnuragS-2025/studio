@@ -114,7 +114,7 @@ async function fetchStockData(symbol: string, apiKey: string) {
                 };
             }
         }
-        console.warn(`Could not determine price change for ${symbol}`);
+        console.warn(`Could not determine price or change for ${symbol}`);
         return null;
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown fetch error';
@@ -144,28 +144,6 @@ export default function Home() {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   const isFetching = useRef(false);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#goals') {
-        setActiveTab('goals');
-      } else if (hash === '#advisor') {
-        setActiveTab('advisor');
-      }
-    };
-
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-
-    if(window.location.hash === '#goals') {
-      setActiveTab('goals');
-    }
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
   
   const generateChartData = (base: number, points = 6) => {
     const data = [];
@@ -188,7 +166,7 @@ export default function Home() {
           toast({
               variant: "destructive",
               title: "API Error",
-              description: "Alpha Vantage API key is not configured.",
+              description: "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.",
           });
           setIsMarketDataLoading(false);
           isFetching.current = false;
@@ -251,9 +229,31 @@ export default function Home() {
       isFetching.current = false;
       setIsMarketDataLoading(false);
 
-    }, [investments, authUser, firestore, toast]);
+  }, [investments, authUser, firestore, toast]);
   
-    useEffect(() => {
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#goals') {
+        setActiveTab('goals');
+      } else if (hash === '#advisor') {
+        setActiveTab('advisor');
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+
+    if(window.location.hash === '#goals') {
+      setActiveTab('goals');
+    }
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
+  useEffect(() => {
       if (investmentsLoading) {
           return;
       }
@@ -261,7 +261,7 @@ export default function Home() {
       const intervalId = setInterval(updateData, 300000); 
   
       return () => clearInterval(intervalId);
-    }, [investmentsLoading, updateData]);
+  }, [investmentsLoading, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);

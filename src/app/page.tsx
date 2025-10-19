@@ -61,6 +61,8 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
+const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY'];
+
 export default function Home() {
   const { user } = useUserData();
   const firestore = useFirestore();
@@ -116,74 +118,76 @@ export default function Home() {
   };
 
   const updateData = useCallback(async () => {
-    if (!firestore || !authUser || !investments || investments.length === 0) return;
+    if (!firestore || !authUser) return;
 
     try {
-      const investmentSymbols = investments.map(inv => inv.symbol).join(',');
-      const response = await fetch(`/api/stocks?symbols=${investmentSymbols}`);
-      const liveData = await response.json();
+        const investmentSymbols = investments ? investments.map(inv => inv.symbol) : [];
+        const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])].join(',');
 
-      if (!response.ok) {
-        console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
-        return;
-      }
-      
-      const newMarketData: MarketStock[] = [];
+        if (!allSymbols) return;
 
-      Object.keys(liveData).forEach(symbol => {
-          const stockInfo = liveData[symbol];
-          if (stockInfo && !stockInfo.error) {
-              const existingStock = marketData.find(s => s.name === symbol);
-              const newChartData = existingStock 
-                ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }] 
-                : generateChartData(stockInfo.price);
-              
-              newMarketData.push({
-                  name: symbol,
-                  value: stockInfo.price,
-                  change: stockInfo.change,
-                  chartData: newChartData
-              });
-          } else if (stockInfo?.error) {
-              console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-          }
-      });
-      
-      setMarketData(newMarketData);
+        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+        const liveData = await response.json();
 
-      // Update Portfolio Firestore Documents
-      for (const investment of investments) {
-        const marketInfo = liveData[investment.symbol];
-        if (marketInfo && !marketInfo.error) {
-          const newPrice = marketInfo.price;
-          const newValue = investment.quantity * newPrice;
-
-          if (newPrice !== investment.price || newValue !== investment.value) {
-            const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-            await updateDoc(investmentRef, {
-              price: newPrice,
-              value: newValue
-            });
-          }
+        if (!response.ok) {
+            console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
+            return;
         }
-      }
 
+        const newMarketData: MarketStock[] = [];
+        Object.keys(liveData).forEach(symbol => {
+            const stockInfo = liveData[symbol];
+            if (stockInfo && !stockInfo.error) {
+                const existingStock = marketData.find(s => s.name === symbol);
+                const newChartData = existingStock
+                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                    : generateChartData(stockInfo.price);
+
+                newMarketData.push({
+                    name: symbol,
+                    value: stockInfo.price,
+                    change: stockInfo.change,
+                    chartData: newChartData
+                });
+            } else if (stockInfo?.error) {
+                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+            }
+        });
+
+        setMarketData(newMarketData);
+
+        if (investments) {
+            for (const investment of investments) {
+                const marketInfo = liveData[investment.symbol];
+                if (marketInfo && !marketInfo.error) {
+                    const newPrice = marketInfo.price;
+                    const newValue = investment.quantity * newPrice;
+
+                    if (newPrice !== investment.price || newValue !== investment.value) {
+                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                        await updateDoc(investmentRef, {
+                            price: newPrice,
+                            value: newValue
+                        });
+                    }
+                }
+            }
+        }
     } catch (error) {
-      console.error("Failed to fetch or parse stock data:", error);
+        console.error("Failed to fetch or parse stock data:", error);
     }
-  }, [firestore, authUser, investments, marketData]);
+}, [firestore, authUser, investments, marketData]);
+
 
   useEffect(() => {
-    // Run once on mount if there are investments
-    if (investments && investments.length > 0) {
-      updateData();
-    }
+    // Run once on mount 
+    updateData();
     
     // Then run every 5 minutes
     const intervalId = setInterval(updateData, 5 * 60 * 1000); 
 
     return () => clearInterval(intervalId);
-  }, [investments, updateData]);
+  }, [updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -390,7 +394,7 @@ export default function Home() {
                 </CardHeader>
             </Card>
             <div className="grid gap-4 md:grid-cols-2">
-                {marketData.slice(0, 4).map((stock) => (
+                {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -716,3 +720,5 @@ export default function Home() {
       </main>
     </div>
   );
+
+    

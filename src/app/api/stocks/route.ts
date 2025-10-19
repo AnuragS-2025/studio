@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 
 // A mapping from the simple symbols used in the app to the Alpha Vantage symbols
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 
     try {
         const stockDataPromises = appSymbols.map(async (appSymbol) => {
-            const alphaVantageSymbol = SYMBOL_MAP[appSymbol] || appSymbol;
+            const alphaVantageSymbol = SYMBOL_MAP[appSymbol.toUpperCase()] || appSymbol.toUpperCase();
             const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
             const response = await fetch(url);
             
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
 
             return {
                 name: appSymbol, // Use the app's internal symbol name
-                value: price,
+                price: price,
                 change: changePercent,
             };
         });
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
         results.forEach(result => {
             if (result && !result.error) {
                 stockData[result.name] = {
-                    price: result.value,
+                    price: result.price,
                     change: result.change,
                 };
             } else if (result && result.error) {

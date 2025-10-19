@@ -48,7 +48,7 @@ import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
@@ -115,82 +115,72 @@ export default function Home() {
     return data;
   };
 
-  useEffect(() => {
-    const updateMarketData = async () => {
-        try {
-            const response = await fetch('/api/stocks');
-            const liveData = await response.json();
+  const updateData = useCallback(async () => {
+    if (!firestore || !authUser) return;
 
-            if (!response.ok) {
-                // Log the specific error from the API route
-                console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
-                return; // Stop execution if the fetch failed
-            }
+    try {
+      const investmentSymbols = investments?.map(inv => inv.symbol).join(',') || '';
+      const response = await fetch(`/api/stocks?symbols=${investmentSymbols}`);
+      const liveData = await response.json();
 
-            setMarketData(prevData => {
-                return prevData.map(stock => {
-                    const newStockData = liveData[stock.name];
-                    if (newStockData && !newStockData.error) {
-                        const newChartData = [...stock.chartData.slice(1), { value: Math.round(newStockData.price) }];
-                        return {
-                            ...stock,
-                            value: newStockData.price,
-                            change: newStockData.change,
-                            chartData: newChartData,
-                        };
-                    }
-                    // If no new data, or an error for this specific stock, keep the old data
-                    if (newStockData?.error) {
-                        console.warn(`Could not update ${stock.name}: ${newStockData.error}`);
-                    }
-                    return stock;
-                });
-            });
-        } catch (error) {
-            console.error("Failed to fetch or parse stock data:", error);
-        }
-    };
+      if (!response.ok) {
+        console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
+        return;
+      }
 
-    const intervalId = setInterval(updateMarketData, 5 * 60 * 1000); // Update every 5 minutes
-    updateMarketData(); // Initial fetch
-    
-    return () => clearInterval(intervalId);
-}, []);
+      // Update Market Data State
+      setMarketData(prevData => {
+        return prevData.map(stock => {
+          const newStockData = liveData[stock.symbol] || liveData[stock.name];
+          if (newStockData && !newStockData.error) {
+            const newChartData = [...stock.chartData.slice(1), { value: Math.round(newStockData.price) }];
+            return {
+              ...stock,
+              value: newStockData.price,
+              change: newStockData.change,
+              chartData: newChartData,
+            };
+          }
+          if (newStockData?.error) {
+            console.warn(`Could not update ${stock.name}: ${newStockData.error}`);
+          }
+          return stock;
+        });
+      });
 
+      // Update Portfolio Firestore Documents
+      if (investments) {
+        for (const investment of investments) {
+          const marketInfo = liveData[investment.symbol] || liveData[investment.name];
+          if (marketInfo && !marketInfo.error) {
+            const newPrice = marketInfo.price;
+            const newValue = investment.quantity * newPrice;
 
-  useEffect(() => {
-    const updatePortfolioValues = async () => {
-      if (!investments || !firestore || !authUser) return;
-
-      const currentMarketData = marketData;
-
-      for (const investment of investments) {
-        const marketInfo = currentMarketData.find(stock => stock.name === investment.name);
-        if (marketInfo) {
-          const newPrice = marketInfo.value;
-          const newValue = investment.quantity * newPrice;
-
-          // Only update if the price has actually changed to avoid unnecessary writes
-          if (newPrice !== investment.price || newValue !== investment.value) {
-            const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-            try {
+            if (newPrice !== investment.price || newValue !== investment.value) {
+              const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
               await updateDoc(investmentRef, {
                 price: newPrice,
                 value: newValue
               });
-            } catch (error) {
-              console.error(`Failed to update investment ${investment.symbol}:`, error);
             }
           }
         }
       }
-    };
 
-    const intervalId = setInterval(updatePortfolioValues, 5 * 60 * 1000);
+    } catch (error) {
+      console.error("Failed to fetch or parse stock data:", error);
+    }
+  }, [firestore, authUser, investments]);
 
-    // Cleanup interval on component unmount
+  useEffect(() => {
+    // Run once on mount
+    updateData(); 
+    
+    // Then run every 5 minutes
+    const intervalId = setInterval(updateData, 5 * 60 * 1000); 
+
     return () => clearInterval(intervalId);
-  }, [investments, firestore, authUser, marketData]);
+  }, [updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -732,4 +722,3 @@ export default function Home() {
     
 
     
-

@@ -41,7 +41,8 @@ export async function GET(request: Request) {
             
             if (!response.ok) {
                 const errorData = await response.text();
-                throw new Error(`Failed to fetch data for ${appSymbol}: ${response.statusText} - ${errorData}`);
+                console.error(`Failed to fetch data for ${appSymbol}: ${response.statusText} - ${errorData}`);
+                return { symbol: appSymbol, error: `API request failed with status ${response.status}` };
             }
 
             const data = await response.json();
@@ -81,6 +82,8 @@ export async function GET(request: Request) {
                     change: result.change,
                 };
             } else if (result && result.error) {
+                // Log the error for debugging but don't crash the entire response
+                console.error(`Error processing symbol ${result.symbol}: ${result.error}`);
                 stockData[result.symbol] = { error: result.error };
             }
         });

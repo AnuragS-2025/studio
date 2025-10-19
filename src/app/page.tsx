@@ -210,7 +210,7 @@ export default function Home() {
   
   useEffect(() => {
     updateData(); // Initial fetch
-    const intervalId = setInterval(updateData, 5 * 60 * 1000); // Fetch every 5 minutes
+    const intervalId = setInterval(updateData, 15 * 60 * 1000); // Fetch every 15 minutes
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [updateData]);
@@ -770,5 +770,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     

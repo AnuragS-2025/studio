@@ -133,30 +133,13 @@ export default function Home() {
       
       try {
         const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
-        const liveData = await response.json();
-        
         if (!response.ok) {
-          let errorMessage = 'Failed to fetch stock data.';
-          if (liveData.error) {
-              errorMessage = liveData.error;
-          }
-          console.error('Failed to fetch stock data from API route:', errorMessage);
-          if (errorMessage.includes("API key is not configured")) {
-              toast({
-                  variant: "destructive",
-                  title: "API Key Missing",
-                  description: "Your Alpha Vantage API key is not configured. Please add it to the .env file and restart the server.",
-              });
-          } else {
-             toast({
-                variant: "destructive",
-                title: "API Error",
-                description: errorMessage,
-             });
-          }
-          if(isMarketDataLoading) setIsMarketDataLoading(false); // Stop loading on API error
+          console.error('Failed to fetch stock data from API route');
+          setIsMarketDataLoading(false); // Stop loading on API error
           return;
         }
+
+        const liveData = await response.json();
 
         setMarketData(currentMarketData => {
           const newMarketData: MarketStock[] = [];
@@ -204,17 +187,12 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to fetch or parse stock data:", error);
-        toast({
-              variant: "destructive",
-              title: "Data Fetch Error",
-              description: "Could not retrieve live market data. Please check your connection.",
-          });
       } finally {
         if (isMarketDataLoading) {
           setIsMarketDataLoading(false);
         }
       }
-    }, [investments, investmentsLoading, authUser, firestore, toast, isMarketDataLoading]);
+    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading]);
   
     useEffect(() => {
       updateData(); // Initial fetch

@@ -78,6 +78,7 @@ export default function Home() {
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
   const [marketData, setMarketData] = useState<MarketStock[]>([]);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
@@ -117,34 +118,40 @@ export default function Home() {
     return data;
   };
 
-  useEffect(() => {
+ useEffect(() => {
     const updateData = async () => {
-        if (!firestore || !authUser || investments === undefined) return;
+      if (investments === undefined) return; // Don't run if investments aren't loaded yet
 
-        try {
-            const investmentSymbols = investments?.map(inv => inv.symbol) || [];
-            const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])].join(',');
-            
-            if (!allSymbols) return;
+      const investmentSymbols = investments?.map(inv => inv.symbol) || [];
+      const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
+      const allSymbols = Array.from(allSymbolsSet).join(',');
 
-            const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
-            if (!response.ok) {
-                console.error('Failed to fetch stock data from API route');
-                return;
-            }
-            const liveData = await response.json();
+      if (!allSymbols) {
+        setIsMarketDataLoading(false);
+        return;
+      }
 
-            if (liveData.error) {
-                console.error('Error fetching stock data:', liveData.error);
-                return;
-            }
+      try {
+        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+        if (!response.ok) {
+          console.error('Failed to fetch stock data from API route');
+          setIsMarketDataLoading(false);
+          return;
+        }
+        const liveData = await response.json();
 
+        if (liveData.error) {
+          console.error('Error fetching stock data:', liveData.error);
+          setIsMarketDataLoading(false);
+          return;
+        }
+
+        setMarketData(prevMarketData => {
             const newMarketData: MarketStock[] = [];
-            
             Object.keys(liveData).forEach(symbol => {
                 const stockInfo = liveData[symbol];
                 if (stockInfo && !stockInfo.error) {
-                    const existingStock = marketData.find(s => s.name === symbol);
+                    const existingStock = prevMarketData.find(s => s.name === symbol);
                     const newChartData = existingStock
                         ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
                         : generateChartData(stockInfo.price);
@@ -159,38 +166,38 @@ export default function Home() {
                     console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
                 }
             });
+            return newMarketData;
+        });
 
-            setMarketData(newMarketData);
+        if (investments && authUser && firestore) {
+            for (const investment of investments) {
+                const marketInfo = liveData[investment.symbol];
+                if (marketInfo && !marketInfo.error) {
+                    const newPrice = marketInfo.price;
+                    const newValue = investment.quantity * newPrice;
 
-            if (investments) {
-                for (const investment of investments) {
-                    const marketInfo = liveData[investment.symbol];
-                    if (marketInfo && !marketInfo.error) {
-                        const newPrice = marketInfo.price;
-                        const newValue = investment.quantity * newPrice;
-
-                        if (newPrice !== investment.price || newValue !== investment.value) {
-                            const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                            await updateDoc(investmentRef, {
-                                price: newPrice,
-                                value: newValue
-                            });
-                        }
+                    if (newPrice !== investment.price || newValue !== investment.value) {
+                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                        await updateDoc(investmentRef, {
+                            price: newPrice,
+                            value: newValue
+                        });
                     }
                 }
             }
-        } catch (error) {
-            console.error("Failed to fetch or parse stock data:", error);
         }
+      } catch (error) {
+        console.error("Failed to fetch or parse stock data:", error);
+      } finally {
+        setIsMarketDataLoading(false);
+      }
     };
     
-    // Run once on mount when investments are loaded, then run on an interval.
-    if(investments !== undefined) {
-        updateData(); 
-        const intervalId = setInterval(updateData, 5 * 60 * 1000); 
-        return () => clearInterval(intervalId);
-    }
-}, [investments, firestore, authUser]);
+    updateData(); // Initial fetch
+    const intervalId = setInterval(updateData, 5 * 60 * 1000); // Fetch every 5 minutes
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, [investments, authUser, firestore]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -396,51 +403,68 @@ export default function Home() {
                 </CardDescription>
                 </CardHeader>
             </Card>
-            <div className="grid gap-4 md:grid-cols-2">
-                {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
-                <Card key={stock.name}>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
-                    <div className={cn("text-sm font-bold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
-                        {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
-                    </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">₹{stock.price.toLocaleString('en-IN')}</div>
-                      <div className="h-[120px]">
-                      <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
-                            <LineChart
-                                data={stock.chartData}
-                                margin={{
-                                top: 5,
-                                right: 10,
-                                left: 10,
-                                bottom: 0,
-                                }}
-                            >
-                                <Tooltip
-                                content={
-                                    <ChartTooltipContent
-                                    indicator="dot"
-                                    hideLabel
-                                    formatter={(value) => `₹${value}`}
+            {isMarketDataLoading ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <Skeleton className="h-5 w-20" />
+                                <Skeleton className="h-5 w-12" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-28 mb-2" />
+                                <Skeleton className="h-[120px] w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                    {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
+                    <Card key={stock.name}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
+                        <div className={cn("text-sm font-bold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
+                            {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
+                        </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">₹{stock.price.toLocaleString('en-IN')}</div>
+                          <div className="h-[120px]">
+                          <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
+                                <LineChart
+                                    data={stock.chartData}
+                                    margin={{
+                                    top: 5,
+                                    right: 10,
+                                    left: 10,
+                                    bottom: 0,
+                                    }}
+                                >
+                                    <Tooltip
+                                    content={
+                                        <ChartTooltipContent
+                                        indicator="dot"
+                                        hideLabel
+                                        formatter={(value) => `₹${value}`}
+                                        />
+                                    }
                                     />
-                                }
-                                />
-                                <Line
-                                dataKey="value"
-                                type="natural"
-                                stroke="var(--color-value)"
-                                strokeWidth={2}
-                                dot={false}
-                                />
-                            </LineChart>
-                        </ChartContainer>
-                      </div>
-                    </CardContent>
-                </Card>
-                ))}
-            </div>
+                                    <Line
+                                    dataKey="value"
+                                    type="natural"
+                                    stroke="var(--color-value)"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    />
+                                </LineChart>
+                            </ChartContainer>
+                          </div>
+                        </CardContent>
+                    </Card>
+                    ))}
+                </div>
+            )}
             <Card>
                 <CardHeader className="flex items-center justify-between flex-row">
                     <div className="space-y-1.5">
@@ -453,6 +477,11 @@ export default function Home() {
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
+                {isMarketDataLoading ? (
+                    <div className="p-4 space-y-2">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                    </div>
+                ) : (
                 <Table>
                     <TableHeader>
                     <TableRow>
@@ -473,6 +502,7 @@ export default function Home() {
                         ))}
                     </TableBody>
                 </Table>
+                )}
                 </CardContent>
             </Card>
         </section>

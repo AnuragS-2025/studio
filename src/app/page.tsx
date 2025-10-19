@@ -124,49 +124,46 @@ export default function Home() {
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
       const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
-      const allSymbols = Array.from(allSymbolsSet).join(',');
+      const allSymbols = Array.from(allSymbolsSet);
 
-      if (!allSymbols) {
+      if (allSymbols.length === 0) {
         if(isMarketDataLoading) setIsMarketDataLoading(false);
         return;
       }
       
       try {
-        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+        const response = await fetch(`/api/stocks?symbols=${allSymbols.join(',')}`);
+        const liveData = await response.json();
+        
         if (!response.ok) {
-          console.error('Failed to fetch stock data from API route');
-          setIsMarketDataLoading(false); // Stop loading on API error
-          return;
+            const errorMessage = liveData.error || `API responded with status ${response.status}`;
+            throw new Error(errorMessage);
         }
 
-        const liveData = await response.json();
+        const newMarketData: MarketStock[] = [];
+        for (const symbol of allSymbols) {
+          const stockInfo = liveData[symbol];
+          if (stockInfo && !stockInfo.error) {
+              const existingStock = marketData.find(s => s.name === symbol);
+              const newChartData = existingStock && existingStock.chartData.length > 0
+                  ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                  : generateChartData(stockInfo.price);
 
-        setMarketData(currentMarketData => {
-          const newMarketData: MarketStock[] = [];
-          for (const symbol of allSymbolsSet) {
-            const stockInfo = liveData[symbol];
-            if (stockInfo && !stockInfo.error) {
-                const existingStock = currentMarketData.find(s => s.name === symbol);
-                const newChartData = existingStock && existingStock.chartData.length > 0
-                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                    : generateChartData(stockInfo.price);
-
-                newMarketData.push({
-                    name: symbol,
-                    price: stockInfo.price,
-                    change: stockInfo.change,
-                    chartData: newChartData
-                });
-            } else if (stockInfo?.error) {
-                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-                const existingStock = currentMarketData.find(s => s.name === symbol);
-                if (existingStock) {
-                   newMarketData.push(existingStock);
-                }
-            }
+              newMarketData.push({
+                  name: symbol,
+                  price: stockInfo.price,
+                  change: stockInfo.change,
+                  chartData: newChartData
+              });
+          } else if (stockInfo?.error) {
+              console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+              const existingStock = marketData.find(s => s.name === symbol);
+              if (existingStock) {
+                 newMarketData.push(existingStock);
+              }
           }
-          return newMarketData;
-        });
+        }
+        setMarketData(newMarketData);
 
         if (investments && authUser && firestore) {
             for (const investment of investments) {
@@ -186,13 +183,19 @@ export default function Home() {
             }
         }
       } catch (error) {
-        console.error("Failed to fetch or parse stock data:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        console.error('Failed to fetch stock data from API route:', errorMessage);
+        toast({
+            variant: "destructive",
+            title: "API Error",
+            description: errorMessage,
+        });
       } finally {
         if (isMarketDataLoading) {
           setIsMarketDataLoading(false);
         }
       }
-    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading]);
+    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData, toast]);
   
     useEffect(() => {
       updateData(); // Initial fetch

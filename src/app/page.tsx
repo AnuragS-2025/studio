@@ -178,7 +178,7 @@ export default function Home() {
     } catch (error) {
         console.error("Failed to fetch or parse stock data:", error);
     }
-  }, [firestore, authUser, investments]);
+  }, [firestore, authUser, investments, marketData]);
 
 
   useEffect(() => {

@@ -62,7 +62,66 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
+const SYMBOL_MAP: { [key: string]: string } = {
+    'RELIANCE': 'RELIANCE.BSE',
+    'TCS': 'TCS.BSE',
+    'HDFCBANK': 'HDFCBANK.BSE',
+    'INFY': 'INFY.BSE',
+    'ICICIBANK': 'ICICIBANK.BSE',
+    'SBIN': 'SBIN.BSE',
+    'BHARTIARTL': 'BHARTIARTL.BSE',
+    'L&T': 'LT.BSE',
+    'HINDUNILVR': 'HINDUNILVR.BSE',
+    'ITC': 'ITC.BSE',
+};
+
 const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN', 'BHARTIARTL', 'L&T', 'HINDUNILVR', 'ITC'];
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchStockData(symbol: string, apiKey: string) {
+    const alphaVantageSymbol = SYMBOL_MAP[symbol.toUpperCase()] || symbol.toUpperCase();
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.Note) {
+            console.warn(`Alpha Vantage API call limit likely reached for ${symbol}.`);
+            return null;
+        }
+        
+        const timeSeries = data['Time Series (Daily)'];
+        if (timeSeries) {
+            const latestDate = Object.keys(timeSeries)[0];
+            const secondLatestDate = Object.keys(timeSeries)[1];
+            
+            if (latestDate && secondLatestDate) {
+                const latestData = timeSeries[latestDate];
+                const previousData = timeSeries[secondLatestDate];
+
+                const price = parseFloat(latestData['4. close']);
+                const prevClose = parseFloat(previousData['4. close']);
+                
+                if (!isNaN(price) && !isNaN(prevClose)) {
+                    const changePercent = ((price - prevClose) / prevClose) * 100;
+                    return {
+                        symbol: symbol,
+                        price: price,
+                        change: changePercent,
+                    };
+                }
+            }
+        }
+        console.warn(`No valid time series data found for ${symbol}`);
+        return null;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown fetch error';
+        console.error(`Error fetching data for ${symbol}:`, message);
+        return null;
+    }
+}
 
 export default function Home() {
   const { user } = useUserData();
@@ -124,8 +183,18 @@ export default function Home() {
   const updateData = useCallback(async () => {
       if (isFetching.current) return;
       isFetching.current = true;
-      if (isMarketDataLoading) {
-        setIsMarketDataLoading(true);
+
+      const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+      if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+          console.error('API key is not configured.');
+          toast({
+              variant: "destructive",
+              title: "API Error",
+              description: "Alpha Vantage API key is not configured.",
+          });
+          setIsMarketDataLoading(false);
+          isFetching.current = false;
+          return;
       }
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
@@ -133,92 +202,64 @@ export default function Home() {
       const allSymbols = Array.from(allSymbolsSet);
 
       if (allSymbols.length === 0) {
-        if(isMarketDataLoading) setIsMarketDataLoading(false);
+        setIsMarketDataLoading(false);
         isFetching.current = false;
         return;
       }
       
-      try {
-        const response = await fetch(`/api/stocks?symbols=${allSymbols.join(',')}`);
-        const liveData = await response.json();
-        
-        if (!response.ok) {
-            const errorMessage = liveData.error || `API responded with status ${response.status}`;
-            throw new Error(errorMessage);
-        }
-        
-        setMarketData(currentMarketData => {
-            const newMarketData: MarketStock[] = [];
-            for (const symbol of allSymbols) {
-            const stockInfo = liveData[symbol];
-            if (stockInfo && !stockInfo.error) {
-                const existingStock = currentMarketData.find(s => s.name === symbol);
-                const newChartData = existingStock && existingStock.chartData.length > 0
-                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                    : generateChartData(stockInfo.price);
+      const liveDataMap = new Map<string, { price: number, change: number }>();
 
-                newMarketData.push({
-                    name: symbol,
-                    price: stockInfo.price,
-                    change: stockInfo.change,
-                    chartData: newChartData
-                });
-            } else if (stockInfo?.error) {
-                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-                const existingStock = currentMarketData.find(s => s.name === symbol);
-                if (existingStock) {
-                    newMarketData.push(existingStock);
-                }
-            }
-            }
-            return newMarketData;
-        });
-
-
-        if (investments && authUser && firestore) {
-            for (const investment of investments) {
-                const marketInfo = liveData[investment.symbol];
-                if (marketInfo && !marketInfo.error) {
-                    const newPrice = marketInfo.price;
-                    const newValue = investment.quantity * newPrice;
-
-                    if (newPrice !== investment.price || newValue !== investment.value) {
-                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                        await updateDoc(investmentRef, {
-                            price: newPrice,
-                            value: newValue
-                        });
-                    }
-                }
-            }
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        console.error('Failed to fetch stock data from API route:', errorMessage);
-        toast({
-            variant: "destructive",
-            title: "API Error",
-            description: errorMessage,
-        });
-      } finally {
-        if (isMarketDataLoading) {
-          setIsMarketDataLoading(false);
-        }
-        isFetching.current = false;
+      for (const symbol of allSymbols) {
+          const data = await fetchStockData(symbol, apiKey);
+          if (data) {
+              liveDataMap.set(symbol, data);
+              setMarketData(currentData => {
+                  const existingStockIndex = currentData.findIndex(s => s.name === symbol);
+                  if (existingStockIndex > -1) {
+                      const updatedStock = { ...currentData[existingStockIndex], price: data.price, change: data.change };
+                      const newData = [...currentData];
+                      newData[existingStockIndex] = updatedStock;
+                      return newData;
+                  } else {
+                      return [...currentData, { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) }];
+                  }
+              });
+          }
+          await delay(13000); // 13 seconds delay
       }
+
+      if (investments && authUser && firestore) {
+          for (const investment of investments) {
+              const marketInfo = liveDataMap.get(investment.symbol);
+              if (marketInfo) {
+                  const newPrice = marketInfo.price;
+                  const newValue = investment.quantity * newPrice;
+
+                  if (newPrice !== investment.price || newValue !== investment.value) {
+                      const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                      await updateDoc(investmentRef, {
+                          price: newPrice,
+                          value: newValue
+                      });
+                  }
+              }
+          }
+      }
+
+      isFetching.current = false;
+      setIsMarketDataLoading(false);
+
     }, [investments, authUser, firestore, toast]);
   
     useEffect(() => {
-      // Don't run the effect until investments are loaded.
       if (investmentsLoading) {
           return;
       }
-      
-      updateData(); // Initial fetch
-      const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
+      updateData();
+      const intervalId = setInterval(updateData, 300000); 
   
-      return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [updateData, investmentsLoading]);
+      return () => clearInterval(intervalId);
+    }, [investmentsLoading, updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -775,3 +816,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

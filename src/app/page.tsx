@@ -93,7 +93,8 @@ async function fetchStockData(symbol: string, apiKey: string) {
         }
         
         const timeSeries = data['Time Series (Daily)'];
-        const sortedDates = Object.keys(timeSeries).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        const sortedDates = Object.keys(timeSeries)
+            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
         
         const latestDate = sortedDates[0];
         const secondLatestDate = sortedDates[1];

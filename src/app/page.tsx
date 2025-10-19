@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/overview";
-import { useBudgets, useExpenseByCategoryData, useInvestments, usePortfolioValue, useRecentTransactions, useTotalExpenses, useTotalIncome, useTransactions, useUserData } from "@/lib/data";
+import { useBudgets, useInvestments, usePortfolioValue, useRecentTransactions, useTotalExpenses, useTotalIncome, useTransactions, useUserData, useExpenseByCategoryData } from "@/lib/data";
 import { AdvisorForm } from "@/app/advisor/advisor-form";
 import { GoalForm } from "@/app/goals/goal-form";
 import { Badge } from "@/components/ui/badge";
@@ -720,5 +720,7 @@ export default function Home() {
       </main>
     </div>
   );
+
+    
 
     

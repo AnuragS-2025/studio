@@ -616,7 +616,7 @@ export default function Home() {
                     </Table>
                   )}
                 </CardContent>
-                </Card>
+                </card>
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Expenses Tracker</CardTitle>
@@ -720,7 +720,4 @@ export default function Home() {
       </main>
     </div>
   );
-
-    
-
-    
+}

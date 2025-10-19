@@ -131,7 +131,7 @@ export default function Home() {
       // Update Market Data State
       setMarketData(prevData => {
         return prevData.map(stock => {
-          const newStockData = liveData[stock.symbol] || liveData[stock.name];
+          const newStockData = liveData[stock.name];
           if (newStockData && !newStockData.error) {
             const newChartData = [...stock.chartData.slice(1), { value: Math.round(newStockData.price) }];
             return {
@@ -147,11 +147,12 @@ export default function Home() {
           return stock;
         });
       });
+      
 
       // Update Portfolio Firestore Documents
       if (investments) {
         for (const investment of investments) {
-          const marketInfo = liveData[investment.symbol] || liveData[investment.name];
+          const marketInfo = liveData[investment.symbol];
           if (marketInfo && !marketInfo.error) {
             const newPrice = marketInfo.price;
             const newValue = investment.quantity * newPrice;
@@ -718,6 +719,8 @@ export default function Home() {
 
 
 
+
+    
 
     
 

@@ -53,6 +53,7 @@ import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 interface MarketStock {
   name: string;
@@ -67,6 +68,7 @@ export default function Home() {
   const { user } = useUserData();
   const firestore = useFirestore();
   const { user: authUser } = useUser();
+  const { toast } = useToast();
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const { recentTransactions, isLoading: recentTransactionsLoading } = useRecentTransactions(5);
   const { investments, isLoading: investmentsLoading } = useInvestments();
@@ -131,12 +133,22 @@ export default function Home() {
     
     try {
       const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+      const liveData = await response.json();
+      
       if (!response.ok) {
-        console.error('Failed to fetch stock data from API route');
-        setIsMarketDataLoading(false); // Stop loading on API error
+        let errorMessage = 'Failed to fetch stock data.';
+        if (liveData.error) {
+            errorMessage = liveData.error;
+        }
+        console.error('Failed to fetch stock data from API route:', errorMessage);
+        toast({
+            variant: "destructive",
+            title: "API Error",
+            description: errorMessage,
+        });
+        setIsMarketDataLoading(false);
         return;
       }
-      const liveData = await response.json();
 
       if (liveData.error) {
         console.error('Error fetching stock data:', liveData.error);
@@ -196,7 +208,7 @@ export default function Home() {
         setIsMarketDataLoading(false);
       }
     }
-  }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData]);
+  }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData, toast]);
   
   useEffect(() => {
     updateData(); // Initial fetch

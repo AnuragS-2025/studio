@@ -119,8 +119,7 @@ export default function Home() {
     return data;
   };
   
-  useEffect(() => {
-    const updateData = async () => {
+  const updateData = useCallback(async () => {
       if (investmentsLoading) return;
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
@@ -128,7 +127,7 @@ export default function Home() {
       const allSymbols = Array.from(allSymbolsSet).join(',');
 
       if (!allSymbols) {
-        setIsMarketDataLoading(false);
+        if(isMarketDataLoading) setIsMarketDataLoading(false);
         return;
       }
       
@@ -155,7 +154,7 @@ export default function Home() {
                 description: errorMessage,
              });
           }
-          setIsMarketDataLoading(false); // Stop loading on API error
+          if(isMarketDataLoading) setIsMarketDataLoading(false); // Stop loading on API error
           return;
         }
 
@@ -215,13 +214,14 @@ export default function Home() {
           setIsMarketDataLoading(false);
         }
       }
-    };
-    
-    updateData(); // Initial fetch
-    const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
-
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [investments, investmentsLoading, authUser, firestore, toast, isMarketDataLoading]);
+    }, [investments, investmentsLoading, authUser, firestore, toast, isMarketDataLoading]);
+  
+    useEffect(() => {
+      updateData(); // Initial fetch
+      const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
+  
+      return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    }, [updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -778,3 +778,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

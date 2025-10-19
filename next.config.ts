@@ -31,11 +31,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_ALPHAVANTAGE_API_KEY: process.env.ALPHAVANTAGE_API_KEY,
-  }
 };
 
 export default nextConfig;
-
-    

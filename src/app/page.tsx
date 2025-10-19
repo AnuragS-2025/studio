@@ -143,7 +143,7 @@ export default function Home() {
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
-
+  const isFetching = useRef(false);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -162,7 +162,6 @@ export default function Home() {
       setActiveTab('goals');
     }
 
-
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
@@ -178,11 +177,10 @@ export default function Home() {
     return data;
   };
   
-  const isFetching = useRef(false);
-
   const updateData = useCallback(async () => {
       if (isFetching.current) return;
       isFetching.current = true;
+      setIsMarketDataLoading(true);
 
       const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
       if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
@@ -215,17 +213,17 @@ export default function Home() {
               liveDataMap.set(symbol, data);
               setMarketData(currentData => {
                   const existingStockIndex = currentData.findIndex(s => s.name === symbol);
+                  const newStockData = { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) };
                   if (existingStockIndex > -1) {
-                      const updatedStock = { ...currentData[existingStockIndex], price: data.price, change: data.change };
                       const newData = [...currentData];
-                      newData[existingStockIndex] = updatedStock;
+                      newData[existingStockIndex] = newStockData;
                       return newData;
                   } else {
-                      return [...currentData, { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) }];
+                      return [...currentData, newStockData];
                   }
               });
           }
-          await delay(13000); // 13 seconds delay
+          await delay(13000); // Respect API rate limit
       }
 
       if (investments && authUser && firestore) {
@@ -261,11 +259,9 @@ export default function Home() {
       return () => clearInterval(intervalId);
     }, [investmentsLoading, updateData]);
 
-
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
-
 
   const expenseChartConfig = {
       value: { label: "Value" },
@@ -816,5 +812,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

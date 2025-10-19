@@ -139,31 +139,34 @@ export default function Home() {
             const errorMessage = liveData.error || `API responded with status ${response.status}`;
             throw new Error(errorMessage);
         }
+        
+        setMarketData(currentMarketData => {
+            const newMarketData: MarketStock[] = [];
+            for (const symbol of allSymbols) {
+            const stockInfo = liveData[symbol];
+            if (stockInfo && !stockInfo.error) {
+                const existingStock = currentMarketData.find(s => s.name === symbol);
+                const newChartData = existingStock && existingStock.chartData.length > 0
+                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                    : generateChartData(stockInfo.price);
 
-        const newMarketData: MarketStock[] = [];
-        for (const symbol of allSymbols) {
-          const stockInfo = liveData[symbol];
-          if (stockInfo && !stockInfo.error) {
-              const existingStock = marketData.find(s => s.name === symbol);
-              const newChartData = existingStock && existingStock.chartData.length > 0
-                  ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                  : generateChartData(stockInfo.price);
+                newMarketData.push({
+                    name: symbol,
+                    price: stockInfo.price,
+                    change: stockInfo.change,
+                    chartData: newChartData
+                });
+            } else if (stockInfo?.error) {
+                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+                const existingStock = currentMarketData.find(s => s.name === symbol);
+                if (existingStock) {
+                    newMarketData.push(existingStock);
+                }
+            }
+            }
+            return newMarketData;
+        });
 
-              newMarketData.push({
-                  name: symbol,
-                  price: stockInfo.price,
-                  change: stockInfo.change,
-                  chartData: newChartData
-              });
-          } else if (stockInfo?.error) {
-              console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-              const existingStock = marketData.find(s => s.name === symbol);
-              if (existingStock) {
-                 newMarketData.push(existingStock);
-              }
-          }
-        }
-        setMarketData(newMarketData);
 
         if (investments && authUser && firestore) {
             for (const investment of investments) {
@@ -195,7 +198,7 @@ export default function Home() {
           setIsMarketDataLoading(false);
         }
       }
-    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData, toast]);
+    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, toast]);
   
     useEffect(() => {
       updateData(); // Initial fetch
@@ -759,3 +762,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

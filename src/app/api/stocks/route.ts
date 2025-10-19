@@ -38,11 +38,13 @@ export async function GET(request: Request) {
 
     try {
         for (const appSymbol of appSymbols) {
-            const alphaVantageSymbol = SYMBOL_MAP[appSymbol.toUpperCase()] || appSymbol.toUpperCase();
+            // Ensure the symbol is uppercase for consistent lookup in SYMBOL_MAP
+            const upperSymbol = appSymbol.toUpperCase();
+            const alphaVantageSymbol = SYMBOL_MAP[upperSymbol] || upperSymbol;
             const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
             
             const response = await fetch(url);
-
+            
             if (!response.ok) {
                 console.error(`Failed to fetch data for ${appSymbol}: ${response.statusText}`);
                 stockData[appSymbol] = { error: `API request failed with status ${response.status}` };
@@ -52,12 +54,13 @@ export async function GET(request: Request) {
 
             const data = await response.json();
             
-            // Critical check for API rate limit note. If present, stop all further requests.
+            // Critical check for API rate limit note or other errors.
             if (data.Note) {
-                 console.warn(`Alpha Vantage API rate limit likely reached. Stopping further requests. Note: ${data.Note}`);
-                 // Return the data we have so far
+                 console.warn(`Alpha Vantage API rate limit likely reached for ${appSymbol}. Note: ${data.Note}`);
                  stockData[appSymbol] = { error: 'API rate limit reached.' };
-                 break; // Exit the loop
+                 // We will continue to the next symbol instead of stopping all requests
+                 await delay(1000);
+                 continue;
             }
 
             const quote = data['Global Quote'];
@@ -67,6 +70,7 @@ export async function GET(request: Request) {
                 continue;
             }
             
+            // Correctly access the keys from the API response
             const price = parseFloat(quote['05. price']);
             const change = parseFloat(quote['09. change']);
             const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
@@ -93,4 +97,3 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
-

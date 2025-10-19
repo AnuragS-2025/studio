@@ -202,6 +202,11 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to fetch or parse stock data:", error);
+      toast({
+            variant: "destructive",
+            title: "Data Fetch Error",
+            description: "Could not retrieve live market data. Please check your connection or API key.",
+        });
     } finally {
       // Only set loading to false after the first fetch completes.
       if (isMarketDataLoading) {
@@ -772,5 +777,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

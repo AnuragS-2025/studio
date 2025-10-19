@@ -61,7 +61,8 @@ export async function GET(request: Request) {
             }
             
             const price = parseFloat(quote['05. price']);
-            const changePercent = parseFloat(quote['10. change percent']);
+            const changePercentString = quote['10. change percent'] || '0%';
+            const changePercent = parseFloat(changePercentString.replace('%', ''));
 
             if (isNaN(price) || isNaN(changePercent)) {
                  stockData[appSymbol] = { error: `Invalid data format for ${appSymbol}` };

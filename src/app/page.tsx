@@ -117,74 +117,80 @@ export default function Home() {
     return data;
   };
 
-  const updateData = useCallback(async () => {
-    if (!firestore || !authUser || !investments) return;
+  useEffect(() => {
+    const updateData = async () => {
+        if (!firestore || !authUser || investments === undefined) return;
 
-    try {
-        const investmentSymbols = investments.map(inv => inv.symbol);
-        const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])].join(',');
+        try {
+            const investmentSymbols = investments?.map(inv => inv.symbol) || [];
+            const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])].join(',');
+            
+            if (!allSymbols) return;
 
-        if (!allSymbols) return;
-
-        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
-        const liveData = await response.json();
-
-        if (liveData.error) {
-            console.error('Error fetching stock data:', liveData.error);
-            return;
-        }
-
-        const newMarketData: MarketStock[] = [];
-        
-        Object.keys(liveData).forEach(symbol => {
-            const stockInfo = liveData[symbol];
-            if (stockInfo && !stockInfo.error) {
-                const existingStock = marketData.find(s => s.name === symbol);
-                const newChartData = existingStock
-                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                    : generateChartData(stockInfo.price);
-
-                newMarketData.push({
-                    name: symbol,
-                    price: stockInfo.price,
-                    change: stockInfo.change,
-                    chartData: newChartData
-                });
-            } else if (stockInfo?.error) {
-                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+            const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+            if (!response.ok) {
+                console.error('Failed to fetch stock data from API route');
+                return;
             }
-        });
+            const liveData = await response.json();
 
-        setMarketData(newMarketData);
+            if (liveData.error) {
+                console.error('Error fetching stock data:', liveData.error);
+                return;
+            }
 
-        for (const investment of investments) {
-            const marketInfo = liveData[investment.symbol];
-            if (marketInfo && !marketInfo.error) {
-                const newPrice = marketInfo.price;
-                const newValue = investment.quantity * newPrice;
+            const newMarketData: MarketStock[] = [];
+            
+            Object.keys(liveData).forEach(symbol => {
+                const stockInfo = liveData[symbol];
+                if (stockInfo && !stockInfo.error) {
+                    const existingStock = marketData.find(s => s.name === symbol);
+                    const newChartData = existingStock
+                        ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                        : generateChartData(stockInfo.price);
 
-                if (newPrice !== investment.price || newValue !== investment.value) {
-                    const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                    await updateDoc(investmentRef, {
-                        price: newPrice,
-                        value: newValue
+                    newMarketData.push({
+                        name: symbol,
+                        price: stockInfo.price,
+                        change: stockInfo.change,
+                        chartData: newChartData
                     });
+                } else if (stockInfo?.error) {
+                    console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+                }
+            });
+
+            setMarketData(newMarketData);
+
+            if (investments) {
+                for (const investment of investments) {
+                    const marketInfo = liveData[investment.symbol];
+                    if (marketInfo && !marketInfo.error) {
+                        const newPrice = marketInfo.price;
+                        const newValue = investment.quantity * newPrice;
+
+                        if (newPrice !== investment.price || newValue !== investment.value) {
+                            const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                            await updateDoc(investmentRef, {
+                                price: newPrice,
+                                value: newValue
+                            });
+                        }
+                    }
                 }
             }
+        } catch (error) {
+            console.error("Failed to fetch or parse stock data:", error);
         }
-    } catch (error) {
-        console.error("Failed to fetch or parse stock data:", error);
-    }
-  }, [firestore, authUser, investments, marketData]);
-
-
-  useEffect(() => {
-    if (investments) {
-        updateData(); // Run once on mount when investments are loaded
-        const intervalId = setInterval(updateData, 5 * 60 * 1000); // Then run every 5 minutes
+    };
+    
+    // Run once on mount when investments are loaded, then run on an interval.
+    if(investments !== undefined) {
+        updateData(); 
+        const intervalId = setInterval(updateData, 5 * 60 * 1000); 
         return () => clearInterval(intervalId);
     }
-  }, [investments, updateData]);
+}, [investments, firestore, authUser]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));

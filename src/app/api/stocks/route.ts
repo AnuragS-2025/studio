@@ -56,8 +56,10 @@ export async function GET(request: Request) {
                      stockData[appSymbol] = { error: `Invalid data for ${appSymbol}` };
                 }
             } else if (data.Note) {
+                // This handles the API call frequency limit note from Alpha Vantage
+                // We log it and will wait before the next iteration
                 stockData[appSymbol] = { error: `API call limit reached for ${appSymbol}` };
-                await delay(15000); 
+                await delay(15000); // Wait for 15 seconds if we hit a rate limit note
             } 
             else {
                 stockData[appSymbol] = { error: `No data found for ${appSymbol}` };
@@ -67,6 +69,7 @@ export async function GET(request: Request) {
             stockData[appSymbol] = { error: `Failed to fetch data for ${appSymbol}: ${message}` };
         }
         
+        // IMPORTANT: Wait for 13 seconds between each API call to respect the free tier limit (5 calls per minute)
         await delay(13000);
     }
 

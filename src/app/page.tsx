@@ -56,7 +56,7 @@ import { doc, updateDoc } from "firebase/firestore";
 
 interface MarketStock {
   name: string;
-  value: number;
+  price: number;
   change: number;
   chartData: { value: number }[];
 }
@@ -129,8 +129,8 @@ export default function Home() {
         const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
         const liveData = await response.json();
 
-        if (!response.ok) {
-            console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
+        if (liveData.error) {
+            console.error('Error fetching stock data:', liveData.error);
             return;
         }
 
@@ -147,7 +147,7 @@ export default function Home() {
 
                 newMarketData.push({
                     name: symbol,
-                    value: stockInfo.price,
+                    price: stockInfo.price,
                     change: stockInfo.change,
                     chartData: newChartData
                 });
@@ -178,7 +178,7 @@ export default function Home() {
     } catch (error) {
         console.error("Failed to fetch or parse stock data:", error);
     }
-  }, [firestore, authUser, investments, marketData]);
+  }, [firestore, authUser, investments]);
 
 
   useEffect(() => {
@@ -405,7 +405,7 @@ export default function Home() {
                     </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">₹{stock.value.toLocaleString('en-IN')}</div>
+                      <div className="text-2xl font-bold">₹{stock.price.toLocaleString('en-IN')}</div>
                       <div className="h-[120px]">
                       <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
                             <LineChart
@@ -464,7 +464,7 @@ export default function Home() {
                     {displayedMovers.map((stock) => (
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
-                            <TableCell>₹{stock.value.toLocaleString('en-IN')}</TableCell>
+                            <TableCell>₹{stock.price.toLocaleString('en-IN')}</TableCell>
                             <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
                             {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
                             </TableCell>
@@ -478,7 +478,7 @@ export default function Home() {
 
         {/* AI Stock Trader Section */}
         <section id="ai-trader" className="space-y-4 scroll-m-20">
-          <AIStockTrader marketData={marketData} />
+          <AIStockTrader marketData={marketData.map(s => ({ name: s.name, value: s.price, change: s.change }))} />
         </section>
 
         {/* Portfolio Section */}

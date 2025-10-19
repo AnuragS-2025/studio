@@ -17,6 +17,52 @@ const SYMBOL_MAP: { [key: string]: string } = {
 // Helper function to introduce a delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// This function now fetches data for a single symbol using TIME_SERIES_DAILY
+// It's more reliable under free-tier rate limits.
+async function fetchStockData(symbol: string, apiKey: string) {
+    const alphaVantageSymbol = SYMBOL_MAP[symbol.toUpperCase()] || symbol.toUpperCase();
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Check for the rate limit note
+        if (data.Note) {
+            console.warn(`Alpha Vantage API call limit likely reached for ${symbol}.`);
+            return { error: `API call limit reached for ${symbol}. Please wait and try again.` };
+        }
+        
+        const timeSeries = data['Time Series (Daily)'];
+        if (timeSeries) {
+            const latestDate = Object.keys(timeSeries)[0];
+            const secondLatestDate = Object.keys(timeSeries)[1];
+            
+            if (latestDate && secondLatestDate) {
+                const latestData = timeSeries[latestDate];
+                const previousData = timeSeries[secondLatestDate];
+
+                const price = parseFloat(latestData['4. close']);
+                const prevClose = parseFloat(previousData['4. close']);
+                
+                if (!isNaN(price) && !isNaN(prevClose)) {
+                    const changePercent = ((price - prevClose) / prevClose) * 100;
+                    return {
+                        price: price,
+                        change: changePercent,
+                    };
+                }
+            }
+        }
+        return { error: `No valid data found for ${symbol}` };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown fetch error';
+        console.error(`Error fetching data for ${symbol}:`, message);
+        return { error: `Failed to fetch data for ${symbol}: ${message}` };
+    }
+}
+
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const symbolsQuery = searchParams.get('symbols');
@@ -33,43 +79,13 @@ export async function GET(request: Request) {
     const appSymbols = symbolsQuery.split(',');
     const stockData: { [key: string]: any } = {};
 
+    // Process symbols sequentially with a delay to respect rate limits
     for (const appSymbol of appSymbols) {
-        const alphaVantageSymbol = SYMBOL_MAP[appSymbol.toUpperCase()] || appSymbol.toUpperCase();
-        const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
-
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data['Global Quote'] && data['Global Quote']['05. price']) {
-                const quote = data['Global Quote'];
-                const price = parseFloat(quote['05. price']);
-                const changePercentString = quote['10. change percent'];
-                const changePercent = parseFloat(changePercentString.replace('%', ''));
-
-                if (!isNaN(price) && !isNaN(changePercent)) {
-                    stockData[appSymbol] = {
-                        price: price,
-                        change: changePercent,
-                    };
-                } else {
-                     stockData[appSymbol] = { error: `Invalid data for ${appSymbol}` };
-                }
-            } else if (data.Note) {
-                // This handles the API call frequency limit note from Alpha Vantage
-                console.warn(`Alpha Vantage API call limit reached for ${appSymbol}. Waiting before retrying or continuing.`);
-                stockData[appSymbol] = { error: `API call limit reached for ${appSymbol}` };
-                await delay(15000); // Wait for 15 seconds if we hit a rate limit note
-            }
-            else {
-                stockData[appSymbol] = { error: `No data found for ${appSymbol}` };
-            }
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            stockData[appSymbol] = { error: `Failed to fetch data for ${appSymbol}: ${message}` };
-        }
+        const data = await fetchStockData(appSymbol, apiKey);
+        stockData[appSymbol] = data;
         
         // IMPORTANT: Wait for 13 seconds between each API call to respect the free tier limit (5 calls per minute)
+        // We do this even if there's an error to avoid getting locked out.
         await delay(13000);
     }
 

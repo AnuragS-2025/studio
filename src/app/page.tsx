@@ -198,7 +198,7 @@ export default function Home() {
           setIsMarketDataLoading(false);
         }
       }
-    }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, toast]);
+    }, [investments, investmentsLoading, authUser, firestore, toast]);
   
     useEffect(() => {
       updateData(); // Initial fetch
@@ -762,5 +762,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     

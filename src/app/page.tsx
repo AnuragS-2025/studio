@@ -119,10 +119,13 @@ export default function Home() {
     const updateMarketData = async () => {
         try {
             const response = await fetch('/api/stocks');
-            if (!response.ok) {
-                throw new Error('Failed to fetch stock data');
-            }
             const liveData = await response.json();
+
+            if (!response.ok) {
+                // Log the specific error from the API route
+                console.error('Error fetching stock data:', liveData.error || 'Unknown server error');
+                return; // Stop execution if the fetch failed
+            }
 
             setMarketData(prevData => {
                 return prevData.map(stock => {
@@ -136,12 +139,15 @@ export default function Home() {
                             chartData: newChartData,
                         };
                     }
-                    // If no new data, keep the old data
+                    // If no new data, or an error for this specific stock, keep the old data
+                    if (newStockData?.error) {
+                        console.warn(`Could not update ${stock.name}: ${newStockData.error}`);
+                    }
                     return stock;
                 });
             });
         } catch (error) {
-            console.error("Error updating market data:", error);
+            console.error("Failed to fetch or parse stock data:", error);
         }
     };
 
@@ -149,7 +155,7 @@ export default function Home() {
     updateMarketData(); // Initial fetch
     
     return () => clearInterval(intervalId);
-  }, []);
+}, []);
 
 
   useEffect(() => {
@@ -726,3 +732,4 @@ export default function Home() {
     
 
     
+

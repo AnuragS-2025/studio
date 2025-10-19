@@ -40,7 +40,9 @@ export async function GET(request: Request) {
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`Failed to fetch data for ${appSymbol}: ${response.statusText}`);
+                // Pass the error message from Alpha Vantage if available
+                const errorData = await response.text();
+                throw new Error(`Failed to fetch data for ${appSymbol}: ${response.statusText} - ${errorData}`);
             }
 
             const data = await response.json();
@@ -61,6 +63,11 @@ export async function GET(request: Request) {
             const change = parseFloat(quote['09. change']);
             const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
 
+            // Basic validation to ensure we have numbers
+            if (isNaN(price) || isNaN(changePercent)) {
+                 return { symbol: appSymbol, error: `Invalid data format for symbol ${appSymbol}` };
+            }
+
             return {
                 name: appSymbol, // Use the app's internal symbol name
                 value: price,
@@ -78,8 +85,7 @@ export async function GET(request: Request) {
                     change: result.change,
                 };
             } else if (result && result.error) {
-                // Optionally handle or log errors for specific symbols
-                console.error(`Error for symbol ${result.symbol}: ${result.error}`);
+                // Pass the specific error for each symbol to the client
                 stockData[result.symbol] = { error: result.error };
             }
         });

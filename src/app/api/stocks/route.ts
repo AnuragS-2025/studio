@@ -70,10 +70,9 @@ export async function GET(request: Request) {
                 continue;
             }
             
-            // --- THIS IS THE CORRECTED PART ---
-            // Correctly access the keys from the API response (e.g., '05. price')
             const price = parseFloat(quote['05. price']);
-            const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+            const changePercentString = quote['10. change percent'];
+            const changePercent = parseFloat(changePercentString.replace('%', ''));
 
             if (isNaN(price) || isNaN(changePercent)) {
                  stockData[appSymbol] = { error: `Invalid data format for symbol ${appSymbol}` };

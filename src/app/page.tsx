@@ -146,7 +146,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('advisor');
   const isFetching = useRef(false);
   
-  const generateChartData = (base: number, points = 6) => {
+  const generateChartData = useCallback((base: number, points = 6) => {
     const data = [];
     let currentValue = base;
     for (let i = 0; i < points; i++) {
@@ -154,82 +154,82 @@ export default function Home() {
         data.push({ value: Math.round(currentValue) });
     }
     return data;
-  };
+  }, []);
   
   const updateData = useCallback(async () => {
-      if (isFetching.current || !investments) return;
-      isFetching.current = true;
-      setIsMarketDataLoading(true);
+    if (isFetching.current || !investments) return;
+    isFetching.current = true;
+    setIsMarketDataLoading(true);
 
-      const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-      if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-          console.error('API key is not configured.');
-          toast({
-              variant: "destructive",
-              title: "API Error",
-              description: "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.",
-          });
-          setIsMarketDataLoading(false);
-          isFetching.current = false;
-          return;
-      }
-
-      const investmentSymbols = investments.map(inv => inv.symbol) || [];
-      const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
-      const allSymbols = Array.from(allSymbolsSet);
-
-      if (allSymbols.length === 0) {
+    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+        console.error('API key is not configured.');
+        toast({
+            variant: "destructive",
+            title: "API Error",
+            description: "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.",
+        });
         setIsMarketDataLoading(false);
         isFetching.current = false;
         return;
-      }
-      
-      const liveDataMap = new Map<string, { price: number, change: number }>();
-      let fetchedStockCount = 0;
+    }
 
-      for (const symbol of allSymbols) {
-          const data = await fetchStockData(symbol, apiKey);
-          if (data) {
-              fetchedStockCount++;
-              liveDataMap.set(symbol, data);
-              setMarketData(currentData => {
-                  const existingStockIndex = currentData.findIndex(s => s.name === symbol);
-                  const newStockData = { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) };
-                  if (existingStockIndex > -1) {
-                      const newData = [...currentData];
-                      newData[existingStockIndex] = newStockData;
-                      return newData;
-                  } else {
-                      return [...currentData, newStockData];
-                  }
-              });
-          }
-          if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
-             await delay(13000); // Respect API rate limit
-          }
-      }
+    const investmentSymbols = investments.map(inv => inv.symbol) || [];
+    const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
+    const allSymbols = Array.from(allSymbolsSet);
 
-      if (fetchedStockCount > 0 && authUser && firestore) {
-          for (const investment of investments) {
-              const marketInfo = liveDataMap.get(investment.symbol);
-              if (marketInfo) {
-                  const newPrice = marketInfo.price;
-                  const newValue = investment.quantity * newPrice;
-
-                  if (newPrice !== investment.price || newValue !== investment.value) {
-                      const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                      await updateDoc(investmentRef, {
-                          price: newPrice,
-                          value: newValue
-                      });
-                  }
-              }
-          }
-      }
-
-      isFetching.current = false;
+    if (allSymbols.length === 0) {
       setIsMarketDataLoading(false);
-  }, [investments, authUser, firestore, toast]);
+      isFetching.current = false;
+      return;
+    }
+    
+    const liveDataMap = new Map<string, { price: number, change: number }>();
+    let fetchedStockCount = 0;
+
+    for (const symbol of allSymbols) {
+        const data = await fetchStockData(symbol, apiKey);
+        if (data) {
+            fetchedStockCount++;
+            liveDataMap.set(symbol, data);
+            setMarketData(currentData => {
+                const existingStockIndex = currentData.findIndex(s => s.name === symbol);
+                const newStockData = { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) };
+                if (existingStockIndex > -1) {
+                    const newData = [...currentData];
+                    newData[existingStockIndex] = newStockData;
+                    return newData;
+                } else {
+                    return [...currentData, newStockData];
+                }
+            });
+        }
+        if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
+           await delay(13000); // Respect API rate limit
+        }
+    }
+
+    if (fetchedStockCount > 0 && authUser && firestore) {
+        for (const investment of investments) {
+            const marketInfo = liveDataMap.get(investment.symbol);
+            if (marketInfo) {
+                const newPrice = marketInfo.price;
+                const newValue = investment.quantity * newPrice;
+
+                if (newPrice !== investment.price || newValue !== investment.value) {
+                    const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                    await updateDoc(investmentRef, {
+                        price: newPrice,
+                        value: newValue
+                    });
+                }
+            }
+        }
+    }
+
+    isFetching.current = false;
+    setIsMarketDataLoading(false);
+  }, [investments, authUser, firestore, toast, generateChartData]);
   
   useEffect(() => {
     const handleHashChange = () => {
@@ -814,3 +814,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

@@ -1,30 +1,94 @@
-
 import { NextResponse } from 'next/server';
 
+// A mapping from the simple symbols used in the app to the Alpha Vantage symbols
+const SYMBOL_MAP: { [key: string]: string } = {
+    'RELIANCE': 'RELIANCE.BSE',
+    'TCS': 'TCS.BSE',
+    'HDFCBANK': 'HDFCBANK.BSE',
+    'INFY': 'INFY.BSE',
+    'ICICIBANK': 'ICICIBANK.BSE',
+    'SBIN': 'SBIN.BSE',
+    'BHARTIARTL': 'BHARTIARTL.BSE',
+    'L&T': 'LT.BSE',
+    'HINDUNILVR': 'HINDUNILVR.BSE',
+    'ITC': 'ITC.BSE',
+};
+
+
 /**
- * This is an API route handler for fetching stock data.
- * You can implement your server-side stock data fetching logic here.
- * This is where you would securely connect to an API like Zerodha Kite Connect.
+ * API route handler for fetching real-time stock data from Alpha Vantage.
  */
-export async function GET() {
-  // TODO: Implement the logic to fetch stock data from a real API.
-  // 1. IMPORTANT: Store your API keys and secrets securely in environment variables.
-  //    Do NOT hardcode them here.
-  //    Example: const apiKey = process.env.KITE_API_KEY;
+export async function GET(request: Request) {
+    const apiKey = process.env.ALPHAVANTAGE_API_KEY;
 
-  // 2. Handle authentication with the stock API provider (e.g., OAuth2 flow).
-  //    This is a server-side operation.
+    if (!apiKey || apiKey === 'YOUR_API_KEY') {
+        return NextResponse.json(
+            { error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file.' },
+            { status: 500 }
+        );
+    }
+    
+    // Get symbols from query parameters, default to a few if not provided
+    const { searchParams } = new URL(request.url);
+    const symbolsQuery = searchParams.get('symbols');
+    const appSymbols = symbolsQuery ? symbolsQuery.split(',') : Object.keys(SYMBOL_MAP);
 
-  // 3. Fetch the stock data for the required symbols.
-  //    You can pass symbols as query parameters, e.g., /api/stocks?symbols=RELIANCE,TCS
+    try {
+        const stockDataPromises = appSymbols.map(async (appSymbol) => {
+            const alphaVantageSymbol = SYMBOL_MAP[appSymbol] || appSymbol;
+            const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch data for ${appSymbol}: ${response.statusText}`);
+            }
 
-  // 4. Format the data as needed for your frontend.
+            const data = await response.json();
+            
+            // Check for API call note (e.g., rate limiting)
+            if (data.Note) {
+                 console.warn(`Alpha Vantage API Note for ${appSymbol}: ${data.Note}`);
+                 // Return a specific structure to indicate a throttled request
+                 return { symbol: appSymbol, error: 'API rate limit reached. Please wait and try again.' };
+            }
 
-  // For now, this placeholder returns a mock response.
-  const mockStockData = {
-    RELIANCE: { price: 2950.0, change: 15.5 },
-    TCS: { price: 3850.0, change: -10.2 },
-  };
+            const quote = data['Global Quote'];
+            if (!quote || Object.keys(quote).length === 0) {
+                return { symbol: appSymbol, error: `No data found for symbol ${appSymbol}` };
+            }
+            
+            const price = parseFloat(quote['05. price']);
+            const change = parseFloat(quote['09. change']);
+            const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
 
-  return NextResponse.json(mockStockData);
+            return {
+                name: appSymbol, // Use the app's internal symbol name
+                value: price,
+                change: changePercent,
+            };
+        });
+
+        const results = await Promise.all(stockDataPromises);
+        
+        const stockData: { [key: string]: any } = {};
+        results.forEach(result => {
+            if (result && !result.error) {
+                stockData[result.name] = {
+                    price: result.value,
+                    change: result.change,
+                };
+            } else if (result && result.error) {
+                // Optionally handle or log errors for specific symbols
+                console.error(`Error for symbol ${result.symbol}: ${result.error}`);
+                stockData[result.symbol] = { error: result.error };
+            }
+        });
+
+        return NextResponse.json(stockData);
+
+    } catch (error) {
+        console.error('Error fetching stock data from Alpha Vantage:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
 }

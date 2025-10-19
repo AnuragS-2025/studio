@@ -54,6 +54,12 @@ import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 
+interface MarketStock {
+  name: string;
+  value: number;
+  change: number;
+  chartData: { value: number }[];
+}
 
 export default function Home() {
   const { user } = useUserData();
@@ -69,7 +75,7 @@ export default function Home() {
   const totalExpenses = useTotalExpenses(transactions);
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
-  const [marketData, setMarketData] = useState(getMarketData());
+  const [marketData, setMarketData] = useState<MarketStock[]>(getMarketData());
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
@@ -98,24 +104,50 @@ export default function Home() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+  
+  const generateChartData = (base: number, points = 6) => {
+    const data = [];
+    let currentValue = base;
+    for (let i = 0; i < points; i++) {
+        currentValue += (Math.random() - 0.5) * (base * 0.1); // Fluctuate by up to 10%
+        data.push({ value: Math.round(currentValue) });
+    }
+    return data;
+  };
 
   useEffect(() => {
-    const updateMarketData = () => {
-        setMarketData(prevData => {
-            return prevData.map(stock => {
-                const changePercent = (Math.random() - 0.5) * 2; // New change between -1% and +1%
-                const newValue = stock.value * (1 + changePercent / 100);
-                const newChartData = [...stock.chartData.slice(1), { value: Math.round(newValue) }];
-                return {
-                    ...stock,
-                    value: Math.round(newValue * 100) / 100,
-                    change: changePercent,
-                    chartData: newChartData,
-                };
+    const updateMarketData = async () => {
+        try {
+            const response = await fetch('/api/stocks');
+            if (!response.ok) {
+                throw new Error('Failed to fetch stock data');
+            }
+            const liveData = await response.json();
+
+            setMarketData(prevData => {
+                return prevData.map(stock => {
+                    const newStockData = liveData[stock.name];
+                    if (newStockData && !newStockData.error) {
+                        const newChartData = [...stock.chartData.slice(1), { value: Math.round(newStockData.price) }];
+                        return {
+                            ...stock,
+                            value: newStockData.price,
+                            change: newStockData.change,
+                            chartData: newChartData,
+                        };
+                    }
+                    // If no new data, keep the old data
+                    return stock;
+                });
             });
-        });
+        } catch (error) {
+            console.error("Error updating market data:", error);
+        }
     };
-    const intervalId = setInterval(updateMarketData, 5000); // Update every 5 seconds
+
+    const intervalId = setInterval(updateMarketData, 5 * 60 * 1000); // Update every 5 minutes
+    updateMarketData(); // Initial fetch
+    
     return () => clearInterval(intervalId);
   }, []);
 
@@ -148,7 +180,7 @@ export default function Home() {
       }
     };
 
-    const intervalId = setInterval(updatePortfolioValues, 5 * 1000); // 5 seconds for demo, should be 5 minutes
+    const intervalId = setInterval(updatePortfolioValues, 5 * 60 * 1000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(intervalId);

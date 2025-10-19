@@ -118,104 +118,110 @@ export default function Home() {
     }
     return data;
   };
+  
+  useEffect(() => {
+    const updateData = async () => {
+      if (investmentsLoading) return;
 
-  const updateData = useCallback(async () => {
-    if (investmentsLoading) return;
+      const investmentSymbols = investments?.map(inv => inv.symbol) || [];
+      const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
+      const allSymbols = Array.from(allSymbolsSet).join(',');
 
-    const investmentSymbols = investments?.map(inv => inv.symbol) || [];
-    const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
-    const allSymbols = Array.from(allSymbolsSet).join(',');
-
-    if (!allSymbols) {
-      setIsMarketDataLoading(false);
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
-      const liveData = await response.json();
-      
-      if (!response.ok) {
-        let errorMessage = 'Failed to fetch stock data.';
-        if (liveData.error) {
-            errorMessage = liveData.error;
-        }
-        console.error('Failed to fetch stock data from API route:', errorMessage);
-        if (errorMessage.includes("API key is not configured")) {
-            toast({
-                variant: "destructive",
-                title: "API Key Missing",
-                description: "Your Alpha Vantage API key is not configured. Please add it to the .env file and restart the server.",
-            });
-        }
+      if (!allSymbols) {
         setIsMarketDataLoading(false);
         return;
       }
-
-      const newMarketData: MarketStock[] = [];
-      const currentMarketData = marketData;
-
-      for (const symbol of allSymbolsSet) {
-           const stockInfo = liveData[symbol];
-           if (stockInfo && !stockInfo.error) {
-               const existingStock = currentMarketData.find(s => s.name === symbol);
-               const newChartData = existingStock && existingStock.chartData.length > 0
-                   ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                   : generateChartData(stockInfo.price);
-
-               newMarketData.push({
-                   name: symbol,
-                   price: stockInfo.price,
-                   change: stockInfo.change,
-                   chartData: newChartData
-               });
-           } else if (stockInfo?.error) {
-               console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-               const existingStock = currentMarketData.find(s => s.name === symbol);
-               if (existingStock) {
-                  newMarketData.push(existingStock);
-               }
-           }
-      }
-      setMarketData(newMarketData);
-
-      if (investments && authUser && firestore) {
-          for (const investment of investments) {
-              const marketInfo = liveData[investment.symbol];
-              if (marketInfo && !marketInfo.error) {
-                  const newPrice = marketInfo.price;
-                  const newValue = investment.quantity * newPrice;
-
-                  if (newPrice !== investment.price || newValue !== investment.value) {
-                      const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                      await updateDoc(investmentRef, {
-                          price: newPrice,
-                          value: newValue
-                      });
-                  }
-              }
+      
+      try {
+        const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
+        const liveData = await response.json();
+        
+        if (!response.ok) {
+          let errorMessage = 'Failed to fetch stock data.';
+          if (liveData.error) {
+              errorMessage = liveData.error;
           }
-      }
-    } catch (error) {
-      console.error("Failed to fetch or parse stock data:", error);
-      toast({
-            variant: "destructive",
-            title: "Data Fetch Error",
-            description: "Could not retrieve live market data. Please check your connection.",
+          console.error('Failed to fetch stock data from API route:', errorMessage);
+          if (errorMessage.includes("API key is not configured")) {
+              toast({
+                  variant: "destructive",
+                  title: "API Key Missing",
+                  description: "Your Alpha Vantage API key is not configured. Please add it to the .env file and restart the server.",
+              });
+          } else {
+             toast({
+                variant: "destructive",
+                title: "API Error",
+                description: errorMessage,
+             });
+          }
+          setIsMarketDataLoading(false); // Stop loading on API error
+          return;
+        }
+
+        setMarketData(currentMarketData => {
+          const newMarketData: MarketStock[] = [];
+          for (const symbol of allSymbolsSet) {
+            const stockInfo = liveData[symbol];
+            if (stockInfo && !stockInfo.error) {
+                const existingStock = currentMarketData.find(s => s.name === symbol);
+                const newChartData = existingStock && existingStock.chartData.length > 0
+                    ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                    : generateChartData(stockInfo.price);
+
+                newMarketData.push({
+                    name: symbol,
+                    price: stockInfo.price,
+                    change: stockInfo.change,
+                    chartData: newChartData
+                });
+            } else if (stockInfo?.error) {
+                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+                const existingStock = currentMarketData.find(s => s.name === symbol);
+                if (existingStock) {
+                   newMarketData.push(existingStock);
+                }
+            }
+          }
+          return newMarketData;
         });
-    } finally {
-      if (isMarketDataLoading) {
-        setIsMarketDataLoading(false);
+
+        if (investments && authUser && firestore) {
+            for (const investment of investments) {
+                const marketInfo = liveData[investment.symbol];
+                if (marketInfo && !marketInfo.error) {
+                    const newPrice = marketInfo.price;
+                    const newValue = investment.quantity * newPrice;
+
+                    if (newPrice !== investment.price || newValue !== investment.value) {
+                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                        await updateDoc(investmentRef, {
+                            price: newPrice,
+                            value: newValue
+                        });
+                    }
+                }
+            }
+        }
+      } catch (error) {
+        console.error("Failed to fetch or parse stock data:", error);
+        toast({
+              variant: "destructive",
+              title: "Data Fetch Error",
+              description: "Could not retrieve live market data. Please check your connection.",
+          });
+      } finally {
+        if (isMarketDataLoading) {
+          setIsMarketDataLoading(false);
+        }
       }
-    }
-  }, [investments, investmentsLoading, authUser, firestore, isMarketDataLoading, marketData, toast]);
-  
-  useEffect(() => {
+    };
+    
     updateData(); // Initial fetch
     const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [updateData]);
+  }, [investments, investmentsLoading, authUser, firestore, toast, isMarketDataLoading]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
@@ -772,11 +778,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    

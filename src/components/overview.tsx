@@ -2,11 +2,19 @@
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { getExpenseChartData } from "@/lib/data"
 import { ChartContainer, ChartTooltipContent } from "./ui/chart"
 
+const data = [
+  { name: "Jan", income: 80000, expenses: 24000 },
+  { name: "Feb", income: 82000, expenses: 31398 },
+  { name: "Mar", income: 75000, expenses: 28800 },
+  { name: "Apr", income: 85000, expenses: 35908 },
+  { name: "May", income: 90000, expenses: 21800 },
+  { name: "Jun", income: 88000, expenses: 36800 },
+  { name: "Jul", income: 92000, expenses: 39300 },
+]
+
 export function Overview() {
-  const data = getExpenseChartData()
   const chartConfig = {
     income: {
       label: "Income",

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Calendar } from '@/components/ui/calendar';
 import { BrainCircuit, Lightbulb, TrendingUp, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useInvestments, getMarketData } from '@/lib/data';
+import { useInvestments } from '@/lib/data';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
@@ -41,14 +41,17 @@ function SubmitButton() {
   );
 }
 
-export function AIStockTrader() {
+interface AIStockTraderProps {
+    marketData: { name: string; value: number; change: number }[];
+}
+
+export function AIStockTrader({ marketData }: AIStockTraderProps) {
   const [state, formAction] = useActionState(getStockTradeSuggestion, initialState);
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
 
   const { investments, isLoading: investmentsLoading } = useInvestments();
-  const marketData = getMarketData();
-
+  
   useEffect(() => {
     if (state.message && state.message !== 'Success') {
         toast({

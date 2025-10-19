@@ -150,14 +150,8 @@ export default function Home() {
         return;
       }
 
-      if (liveData.error) {
-        console.error('Error fetching stock data:', liveData.error);
-        setIsMarketDataLoading(false);
-        return;
-      }
-
       const newMarketData: MarketStock[] = [];
-      const currentMarketData = marketData; // Capture current state for chart data continuity
+      const currentMarketData = marketData;
 
       for (const symbol of allSymbolsSet) {
            const stockInfo = liveData[symbol];
@@ -177,7 +171,7 @@ export default function Home() {
                console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
                const existingStock = currentMarketData.find(s => s.name === symbol);
                if (existingStock) {
-                  newMarketData.push(existingStock); // Keep stale data if fetch fails
+                  newMarketData.push(existingStock);
                }
            }
       }
@@ -205,10 +199,9 @@ export default function Home() {
       toast({
             variant: "destructive",
             title: "Data Fetch Error",
-            description: "Could not retrieve live market data. Please check your connection or API key.",
+            description: "Could not retrieve live market data. Please check your connection.",
         });
     } finally {
-      // Only set loading to false after the first fetch completes.
       if (isMarketDataLoading) {
         setIsMarketDataLoading(false);
       }
@@ -777,3 +770,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

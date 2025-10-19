@@ -61,7 +61,7 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
-const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY'];
+const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN', 'BHARTIARTL', 'L&T', 'HINDUNILVR', 'ITC'];
 
 export default function Home() {
   const { user } = useUserData();
@@ -97,7 +97,6 @@ export default function Home() {
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
 
-    // If the hash is #goals on initial load, set the tab
     if(window.location.hash === '#goals') {
       setActiveTab('goals');
     }
@@ -112,7 +111,7 @@ export default function Home() {
     const data = [];
     let currentValue = base;
     for (let i = 0; i < points; i++) {
-        currentValue += (Math.random() - 0.5) * (base * 0.1); // Fluctuate by up to 10%
+        currentValue += (Math.random() - 0.5) * (base * 0.1); 
         data.push({ value: Math.round(currentValue) });
     }
     return data;
@@ -120,7 +119,8 @@ export default function Home() {
 
  useEffect(() => {
     const updateData = async () => {
-      if (investments === undefined) return; // Don't run if investments aren't loaded yet
+      // Don't run if investments are loading for the first time, but allow subsequent fetches
+      if (investmentsLoading && !marketData.length) return;
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
       const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
@@ -135,7 +135,7 @@ export default function Home() {
         const response = await fetch(`/api/stocks?symbols=${allSymbols}`);
         if (!response.ok) {
           console.error('Failed to fetch stock data from API route');
-          setIsMarketDataLoading(false);
+          // Don't set loading to false on a failed refresh, keep stale data
           return;
         }
         const liveData = await response.json();
@@ -146,28 +146,30 @@ export default function Home() {
           return;
         }
 
-        setMarketData(prevMarketData => {
-            const newMarketData: MarketStock[] = [];
-            Object.keys(liveData).forEach(symbol => {
-                const stockInfo = liveData[symbol];
-                if (stockInfo && !stockInfo.error) {
-                    const existingStock = prevMarketData.find(s => s.name === symbol);
-                    const newChartData = existingStock
-                        ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
-                        : generateChartData(stockInfo.price);
+        const newMarketData: MarketStock[] = [];
+        for (const symbol of allSymbolsSet) {
+             const stockInfo = liveData[symbol];
+             if (stockInfo && !stockInfo.error) {
+                 const existingStock = marketData.find(s => s.name === symbol);
+                 const newChartData = existingStock && existingStock.chartData.length > 0
+                     ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
+                     : generateChartData(stockInfo.price);
 
-                    newMarketData.push({
-                        name: symbol,
-                        price: stockInfo.price,
-                        change: stockInfo.change,
-                        chartData: newChartData
-                    });
-                } else if (stockInfo?.error) {
-                    console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
-                }
-            });
-            return newMarketData;
-        });
+                 newMarketData.push({
+                     name: symbol,
+                     price: stockInfo.price,
+                     change: stockInfo.change,
+                     chartData: newChartData
+                 });
+             } else if (stockInfo?.error) {
+                 console.warn(`Could not update ${symbol}: ${stockInfo.error}`);
+                 const existingStock = marketData.find(s => s.name === symbol);
+                 if (existingStock) {
+                    newMarketData.push(existingStock); // Keep stale data if fetch fails
+                 }
+             }
+        }
+        setMarketData(newMarketData);
 
         if (investments && authUser && firestore) {
             for (const investment of investments) {
@@ -197,11 +199,11 @@ export default function Home() {
     const intervalId = setInterval(updateData, 5 * 60 * 1000); // Fetch every 5 minutes
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [investments, authUser, firestore]);
+  }, [investmentsLoading, investments, authUser, firestore]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
-  const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 3);
+  const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
 
@@ -216,7 +218,7 @@ export default function Home() {
   const marketChartConfig = (change: number) => ({
       value: {
           label: 'Value',
-          color: change > 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'
+          color: change >= 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'
       }
   });
 
@@ -404,7 +406,7 @@ export default function Home() {
                 </CardHeader>
             </Card>
             {isMarketDataLoading ? (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
                         <Card key={i}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -419,13 +421,13 @@ export default function Home() {
                     ))}
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
                     <Card key={stock.name}>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
-                        <div className={cn("text-sm font-bold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
-                            {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
+                        <div className={cn("text-sm font-bold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
+                            {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
                         </div>
                         </CardHeader>
                         <CardContent>
@@ -479,7 +481,7 @@ export default function Home() {
                 <CardContent className="p-0">
                 {isMarketDataLoading ? (
                     <div className="p-4 space-y-2">
-                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
                     </div>
                 ) : (
                 <Table>
@@ -495,8 +497,8 @@ export default function Home() {
                         <TableRow key={stock.name}>
                             <TableCell className="font-medium">{stock.name}</TableCell>
                             <TableCell>₹{stock.price.toLocaleString('en-IN')}</TableCell>
-                            <TableCell className={cn("text-right font-semibold", stock.change > 0 ? "text-green-500" : "text-red-500")}>
-                            {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)}%
+                            <TableCell className={cn("text-right font-semibold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
+                            {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
                             </TableCell>
                         </TableRow>
                         ))}
@@ -754,3 +756,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

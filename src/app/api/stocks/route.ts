@@ -70,7 +70,8 @@ export async function GET(request: Request) {
                 continue;
             }
             
-            // Correctly access the keys from the API response
+            // --- THIS IS THE CORRECTED PART ---
+            // Correctly access the keys from the API response (e.g., '05. price')
             const price = parseFloat(quote['05. price']);
             const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
 

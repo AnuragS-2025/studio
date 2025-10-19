@@ -48,7 +48,7 @@ import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
@@ -119,8 +119,11 @@ export default function Home() {
     return data;
   };
   
+  const isFetching = useRef(false);
+
   const updateData = useCallback(async () => {
-      if (investmentsLoading) return;
+      if (isFetching.current) return;
+      isFetching.current = true;
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
       const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
@@ -128,6 +131,7 @@ export default function Home() {
 
       if (allSymbols.length === 0) {
         if(isMarketDataLoading) setIsMarketDataLoading(false);
+        isFetching.current = false;
         return;
       }
       
@@ -197,15 +201,21 @@ export default function Home() {
         if (isMarketDataLoading) {
           setIsMarketDataLoading(false);
         }
+        isFetching.current = false;
       }
-    }, [investments, investmentsLoading, authUser, firestore, toast]);
+    }, [investments, authUser, firestore, toast, isMarketDataLoading]); // Stable dependencies
   
     useEffect(() => {
+      // Don't run the effect until investments are loaded.
+      if (investmentsLoading) {
+          return;
+      }
+      
       updateData(); // Initial fetch
       const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
   
       return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [updateData]);
+    }, [updateData, investmentsLoading]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));

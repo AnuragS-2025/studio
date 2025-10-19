@@ -1,7 +1,6 @@
 
 import { NextResponse } from 'next/server';
 
-// A mapping from the simple symbols used in the app to the Alpha Vantage symbols
 const SYMBOL_MAP: { [key: string]: string } = {
     'RELIANCE': 'RELIANCE.BSE',
     'TCS': 'TCS.BSE',
@@ -15,46 +14,63 @@ const SYMBOL_MAP: { [key: string]: string } = {
     'ITC': 'ITC.BSE',
 };
 
-const BASE_PRICES: { [key: string]: number } = {
-    'RELIANCE': 2950.0,
-    'TCS': 3850.0,
-    'HDFCBANK': 1680.0,
-    'INFY': 1550.0,
-    'ICICIBANK': 1100.0,
-    'SBIN': 830.0,
-    'BHARTIARTL': 1400.0,
-    'L&T': 3600.0,
-    'HINDUNILVR': 2400.0,
-    'ITC': 430.0,
-};
+// Helper function to introduce a delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * API route handler for fetching real-time stock data.
- * This version generates mock data to avoid dependency on an external API key.
- */
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const symbolsQuery = searchParams.get('symbols');
+    const apiKey = process.env.ALPHAVANTAGE_API_KEY;
+
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+        return NextResponse.json({ error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file.' }, { status: 500 });
+    }
+
     if (!symbolsQuery) {
         return NextResponse.json({ error: 'No symbols provided' }, { status: 400 });
     }
+
     const appSymbols = symbolsQuery.split(',');
-
     const stockData: { [key: string]: any } = {};
-    
+
     for (const appSymbol of appSymbols) {
-        const upperSymbol = appSymbol.toUpperCase();
-        const basePrice = BASE_PRICES[upperSymbol] || (Math.random() * 5000);
+        const alphaVantageSymbol = SYMBOL_MAP[appSymbol.toUpperCase()] || appSymbol.toUpperCase();
+        const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
 
-        // Simulate some price fluctuation
-        const price = basePrice * (1 + (Math.random() - 0.5) * 0.1); 
-        // Simulate some percentage change
-        const change = (Math.random() - 0.5) * 5; // a value between -2.5 and 2.5
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
 
-        stockData[appSymbol] = {
-            price: parseFloat(price.toFixed(2)),
-            change: parseFloat(change.toFixed(2)),
-        };
+            if (data['Global Quote']) {
+                const quote = data['Global Quote'];
+                const price = parseFloat(quote['05. price']);
+                const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+
+                if (!isNaN(price) && !isNaN(changePercent)) {
+                    stockData[appSymbol] = {
+                        price: price,
+                        change: changePercent,
+                    };
+                } else {
+                     stockData[appSymbol] = { error: `Invalid data for ${appSymbol}` };
+                }
+            } else if (data.Note) {
+                 // This handles the API call frequency limit
+                stockData[appSymbol] = { error: `API call limit reached for ${appSymbol}` };
+                 // If we hit the limit, wait before the next call
+                await delay(15000); // Wait 15 seconds
+            } 
+            else {
+                stockData[appSymbol] = { error: `No data found for ${appSymbol}` };
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            stockData[appSymbol] = { error: `Failed to fetch data for ${appSymbol}: ${message}` };
+        }
+        
+        // Alpha Vantage has a rate limit of 5 calls per minute for the free tier. 
+        // Adding a delay between calls to respect this limit.
+        await delay(13000); // ~13 seconds delay between each API call
     }
 
     return NextResponse.json(stockData);

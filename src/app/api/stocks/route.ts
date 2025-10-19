@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import 'dotenv/config';
 
 const SYMBOL_MAP: { [key: string]: string } = {
     'RELIANCE': 'RELIANCE.BSE',
@@ -21,10 +20,11 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const symbolsQuery = searchParams.get('symbols');
+    // In Next.js App Router API Routes, access environment variables via process.env
     const apiKey = process.env.ALPHAVANTAGE_API_KEY;
 
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE' || apiKey === 'ALPHAVANTAGE_API_KEY') {
-        return NextResponse.json({ error: 'API key is not configured. Please add ALPHAVANTage_API_KEY to your .env file.' }, { status: 500 });
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE' || apiKey.includes('ALPHAVANTAGE_API_KEY')) {
+        return NextResponse.json({ error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file.' }, { status: 500 });
     }
 
     if (!symbolsQuery) {
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
 
             if (data['Global Quote']) {
                 const quote = data['Global Quote'];
+                // Use the correct keys from the API response
                 const price = parseFloat(quote['05. price']);
                 const changePercent = parseFloat(quote['10. change percent']);
 

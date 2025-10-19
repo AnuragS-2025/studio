@@ -124,6 +124,9 @@ export default function Home() {
   const updateData = useCallback(async () => {
       if (isFetching.current) return;
       isFetching.current = true;
+      if (isMarketDataLoading) {
+        setIsMarketDataLoading(true);
+      }
 
       const investmentSymbols = investments?.map(inv => inv.symbol) || [];
       const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
@@ -203,7 +206,7 @@ export default function Home() {
         }
         isFetching.current = false;
       }
-    }, [investments, authUser, firestore, toast, isMarketDataLoading]); // Stable dependencies
+    }, [investments, authUser, firestore, toast]);
   
     useEffect(() => {
       // Don't run the effect until investments are loaded.
@@ -772,7 +775,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    

@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
     if (!apiKey || apiKey === 'YOUR_API_KEY') {
         return NextResponse.json(
-            { error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file.' },
+            { error: 'API key is not configured. Please add ALPHAVANTAGE_API_KEY to your .env file and restart the server.' },
             { status: 500 }
         );
     }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
             if (!response.ok) {
                 console.error(`Failed to fetch data for ${appSymbol}: ${response.statusText}`);
                 stockData[appSymbol] = { error: `API request failed with status ${response.status}` };
-                await delay(1000); // Wait before the next request even on failure
+                await delay(1500); // Wait before the next request even on failure
                 continue;
             }
 
@@ -56,23 +56,22 @@ export async function GET(request: Request) {
             
             // Critical check for API rate limit note or other errors.
             if (data.Note) {
-                 console.warn(`Alpha Vantage API rate limit likely reached for ${appSymbol}. Note: ${data.Note}`);
-                 stockData[appSymbol] = { error: 'API rate limit reached.' };
-                 // We will continue to the next symbol instead of stopping all requests
-                 await delay(1000);
-                 continue;
+                 console.warn(`Alpha Vantage API rate limit likely reached. Note: ${data.Note}`);
+                 // Stop further requests to avoid being blocked.
+                 // Return the data fetched so far.
+                 stockData['error'] = 'API rate limit reached. Some data may be missing.';
+                 break;
             }
 
             const quote = data['Global Quote'];
             if (!quote || Object.keys(quote).length === 0) {
                 stockData[appSymbol] = { error: `No data found for symbol ${appSymbol}` };
-                await delay(1000);
+                await delay(1500);
                 continue;
             }
             
             // Correctly access the keys from the API response
             const price = parseFloat(quote['05. price']);
-            const change = parseFloat(quote['09. change']);
             const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
 
             if (isNaN(price) || isNaN(changePercent)) {
@@ -85,8 +84,8 @@ export async function GET(request: Request) {
             }
             
             // Add a delay between requests to avoid hitting rate limits.
-            // The free tier is very restrictive. 1 second is a safer bet.
-            await delay(1000); 
+            // The free tier is very restrictive. 1.5 seconds is a safer bet.
+            await delay(1500); 
         }
 
         return NextResponse.json(stockData);

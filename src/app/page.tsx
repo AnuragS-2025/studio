@@ -87,34 +87,34 @@ async function fetchStockData(symbol: string, apiKey: string) {
         const response = await fetch(url);
         const data = await response.json();
 
-        if (data.Note) {
-            console.warn(`Alpha Vantage API call limit likely reached for ${symbol}.`);
+        if (data.Note || !data['Time Series (Daily)']) {
+            console.warn(`Alpha Vantage API call limit or error for ${symbol}:`, data.Note || 'No time series data');
             return null;
         }
         
         const timeSeries = data['Time Series (Daily)'];
-        if (timeSeries) {
-            const latestDate = Object.keys(timeSeries)[0];
-            const secondLatestDate = Object.keys(timeSeries)[1];
-            
-            if (latestDate && secondLatestDate) {
-                const latestData = timeSeries[latestDate];
-                const previousData = timeSeries[secondLatestDate];
+        const sortedDates = Object.keys(timeSeries).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        
+        const latestDate = sortedDates[0];
+        const secondLatestDate = sortedDates[1];
+        
+        if (latestDate && secondLatestDate) {
+            const latestData = timeSeries[latestDate];
+            const previousData = timeSeries[secondLatestDate];
 
-                const price = parseFloat(latestData['4. close']);
-                const prevClose = parseFloat(previousData['4. close']);
-                
-                if (!isNaN(price) && !isNaN(prevClose)) {
-                    const changePercent = ((price - prevClose) / prevClose) * 100;
-                    return {
-                        symbol: symbol,
-                        price: price,
-                        change: changePercent,
-                    };
-                }
+            const price = parseFloat(latestData['4. close']);
+            const prevClose = parseFloat(previousData['4. close']);
+            
+            if (!isNaN(price) && !isNaN(prevClose)) {
+                const changePercent = ((price - prevClose) / prevClose) * 100;
+                return {
+                    symbol: symbol,
+                    price: price,
+                    change: changePercent,
+                };
             }
         }
-        console.warn(`No valid time series data found for ${symbol}`);
+        console.warn(`Could not determine price change for ${symbol}`);
         return null;
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown fetch error';
@@ -178,7 +178,7 @@ export default function Home() {
   };
   
   const updateData = useCallback(async () => {
-      if (isFetching.current) return;
+      if (isFetching.current || !investments) return;
       isFetching.current = true;
       setIsMarketDataLoading(true);
 
@@ -195,7 +195,7 @@ export default function Home() {
           return;
       }
 
-      const investmentSymbols = investments?.map(inv => inv.symbol) || [];
+      const investmentSymbols = investments.map(inv => inv.symbol) || [];
       const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
       const allSymbols = Array.from(allSymbolsSet);
 
@@ -206,10 +206,12 @@ export default function Home() {
       }
       
       const liveDataMap = new Map<string, { price: number, change: number }>();
+      let fetchedStockCount = 0;
 
       for (const symbol of allSymbols) {
           const data = await fetchStockData(symbol, apiKey);
           if (data) {
+              fetchedStockCount++;
               liveDataMap.set(symbol, data);
               setMarketData(currentData => {
                   const existingStockIndex = currentData.findIndex(s => s.name === symbol);
@@ -223,10 +225,12 @@ export default function Home() {
                   }
               });
           }
-          await delay(13000); // Respect API rate limit
+          if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
+             await delay(13000); // Respect API rate limit
+          }
       }
 
-      if (investments && authUser && firestore) {
+      if (fetchedStockCount > 0 && authUser && firestore) {
           for (const investment of investments) {
               const marketInfo = liveDataMap.get(investment.symbol);
               if (marketInfo) {
@@ -307,7 +311,7 @@ export default function Home() {
                 <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3.4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString('en-IN')}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalIncome.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -737,7 +741,6 @@ export default function Home() {
                             className="-mt-4 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
                         />
                       </PieChart>
-                    </ChartContainer>
                     )}
                     </CardContent>
                 </Card>

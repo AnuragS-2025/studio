@@ -15,9 +15,10 @@ const SYMBOL_MAP: { [key: string]: string } = {
     'ITC': 'ITC.BSE',
 };
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * API route handler for fetching real-time stock data from Alpha Vantage.
+ * API route handler for fetching real-time stock data from Alpha Vantage sequentially to respect rate limits.
  */
 export async function GET(request: Request) {
     const apiKey = process.env.ALPHAVANTAGE_API_KEY;
@@ -33,28 +34,37 @@ export async function GET(request: Request) {
     const symbolsQuery = searchParams.get('symbols');
     const appSymbols = symbolsQuery ? symbolsQuery.split(',') : Object.keys(SYMBOL_MAP);
 
+    const stockData: { [key: string]: any } = {};
+
     try {
-        const stockDataPromises = appSymbols.map(async (appSymbol) => {
+        for (const appSymbol of appSymbols) {
             const alphaVantageSymbol = SYMBOL_MAP[appSymbol.toUpperCase()] || appSymbol.toUpperCase();
             const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
-            const response = await fetch(url);
             
+            const response = await fetch(url);
+
             if (!response.ok) {
-                const errorData = await response.text();
-                console.error(`Failed to fetch data for ${appSymbol}: ${response.statusText} - ${errorData}`);
-                return { symbol: appSymbol, error: `API request failed with status ${response.status}` };
+                console.error(`Failed to fetch data for ${appSymbol}: ${response.statusText}`);
+                stockData[appSymbol] = { error: `API request failed with status ${response.status}` };
+                await delay(1000); // Wait before the next request even on failure
+                continue;
             }
 
             const data = await response.json();
             
+            // Critical check for API rate limit note. If present, stop all further requests.
             if (data.Note) {
-                 console.warn(`Alpha Vantage API Note for ${appSymbol}: ${data.Note}`);
-                 return { symbol: appSymbol, error: 'API rate limit reached. Please wait and try again.' };
+                 console.warn(`Alpha Vantage API rate limit likely reached. Stopping further requests. Note: ${data.Note}`);
+                 // Return the data we have so far
+                 stockData[appSymbol] = { error: 'API rate limit reached.' };
+                 break; // Exit the loop
             }
 
             const quote = data['Global Quote'];
             if (!quote || Object.keys(quote).length === 0) {
-                return { symbol: appSymbol, error: `No data found for symbol ${appSymbol}` };
+                stockData[appSymbol] = { error: `No data found for symbol ${appSymbol}` };
+                await delay(1000);
+                continue;
             }
             
             const price = parseFloat(quote['05. price']);
@@ -62,36 +72,23 @@ export async function GET(request: Request) {
             const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
 
             if (isNaN(price) || isNaN(changePercent)) {
-                 return { symbol: appSymbol, error: `Invalid data format for symbol ${appSymbol}` };
-            }
-
-            return {
-                name: appSymbol,
-                price: price,
-                change: changePercent,
-            };
-        });
-
-        const results = await Promise.all(stockDataPromises);
-        
-        const stockData: { [key: string]: any } = {};
-        results.forEach(result => {
-            if (result && !result.error) {
-                stockData[result.name] = {
-                    price: result.price,
-                    change: result.change,
+                 stockData[appSymbol] = { error: `Invalid data format for symbol ${appSymbol}` };
+            } else {
+                stockData[appSymbol] = {
+                    price: price,
+                    change: changePercent,
                 };
-            } else if (result && result.error) {
-                // Log the error for debugging but don't crash the entire response
-                console.error(`Error processing symbol ${result.symbol}: ${result.error}`);
-                stockData[result.symbol] = { error: result.error };
             }
-        });
+            
+            // Add a delay between requests to avoid hitting rate limits.
+            // The free tier is very restrictive. 1 second is a safer bet.
+            await delay(1000); 
+        }
 
         return NextResponse.json(stockData);
 
     } catch (error) {
-        console.error('Error fetching stock data from Alpha Vantage:', error);
+        console.error('Error fetching stock data sequentially from Alpha Vantage:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }

@@ -135,10 +135,12 @@ export default function Home() {
         }
 
         const newMarketData: MarketStock[] = [];
+        const currentMarketData = [...marketData];
+
         Object.keys(liveData).forEach(symbol => {
             const stockInfo = liveData[symbol];
             if (stockInfo && !stockInfo.error) {
-                const existingStock = marketData.find(s => s.name === symbol);
+                const existingStock = currentMarketData.find(s => s.name === symbol);
                 const newChartData = existingStock
                     ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
                     : generateChartData(stockInfo.price);
@@ -176,7 +178,7 @@ export default function Home() {
     } catch (error) {
         console.error("Failed to fetch or parse stock data:", error);
     }
-}, [firestore, authUser, investments, marketData]);
+  }, [firestore, authUser, investments, marketData]);
 
 
   useEffect(() => {
@@ -616,7 +618,7 @@ export default function Home() {
                     </Table>
                   )}
                 </CardContent>
-                </card>
+                </Card>
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Expenses Tracker</CardTitle>

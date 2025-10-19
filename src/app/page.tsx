@@ -118,10 +118,10 @@ export default function Home() {
   };
 
   const updateData = useCallback(async () => {
-    if (!firestore || !authUser) return;
+    if (!firestore || !authUser || !investments) return;
 
     try {
-        const investmentSymbols = investments ? investments.map(inv => inv.symbol) : [];
+        const investmentSymbols = investments.map(inv => inv.symbol);
         const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])].join(',');
 
         if (!allSymbols) return;
@@ -135,12 +135,11 @@ export default function Home() {
         }
 
         const newMarketData: MarketStock[] = [];
-        const currentMarketData = [...marketData];
-
+        
         Object.keys(liveData).forEach(symbol => {
             const stockInfo = liveData[symbol];
             if (stockInfo && !stockInfo.error) {
-                const existingStock = currentMarketData.find(s => s.name === symbol);
+                const existingStock = marketData.find(s => s.name === symbol);
                 const newChartData = existingStock
                     ? [...existingStock.chartData.slice(1), { value: Math.round(stockInfo.price) }]
                     : generateChartData(stockInfo.price);
@@ -158,20 +157,18 @@ export default function Home() {
 
         setMarketData(newMarketData);
 
-        if (investments) {
-            for (const investment of investments) {
-                const marketInfo = liveData[investment.symbol];
-                if (marketInfo && !marketInfo.error) {
-                    const newPrice = marketInfo.price;
-                    const newValue = investment.quantity * newPrice;
+        for (const investment of investments) {
+            const marketInfo = liveData[investment.symbol];
+            if (marketInfo && !marketInfo.error) {
+                const newPrice = marketInfo.price;
+                const newValue = investment.quantity * newPrice;
 
-                    if (newPrice !== investment.price || newValue !== investment.value) {
-                        const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                        await updateDoc(investmentRef, {
-                            price: newPrice,
-                            value: newValue
-                        });
-                    }
+                if (newPrice !== investment.price || newValue !== investment.value) {
+                    const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                    await updateDoc(investmentRef, {
+                        price: newPrice,
+                        value: newValue
+                    });
                 }
             }
         }
@@ -182,14 +179,12 @@ export default function Home() {
 
 
   useEffect(() => {
-    // Run once on mount 
-    updateData();
-    
-    // Then run every 5 minutes
-    const intervalId = setInterval(updateData, 5 * 60 * 1000); 
-
-    return () => clearInterval(intervalId);
-  }, [updateData]);
+    if (investments) {
+        updateData(); // Run once on mount when investments are loaded
+        const intervalId = setInterval(updateData, 5 * 60 * 1000); // Then run every 5 minutes
+        return () => clearInterval(intervalId);
+    }
+  }, [investments, updateData]);
 
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));

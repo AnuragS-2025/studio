@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -48,9 +47,14 @@ interface AIStockTraderProps {
 export function AIStockTrader({ marketData }: AIStockTraderProps) {
   const [state, formAction] = useActionState(getStockTradeSuggestion, initialState);
   const { toast } = useToast();
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
 
   const { investments, isLoading: investmentsLoading } = useInvestments();
+
+  useEffect(() => {
+    // This will only run on the client, after initial hydration
+    setDate(new Date());
+  }, []);
   
   useEffect(() => {
     if (state.message && state.message !== 'Success') {

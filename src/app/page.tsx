@@ -2,7 +2,7 @@
 'use client';
 
 import {
-  Card,
+ Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -740,6 +740,7 @@ export default function Home() {
                             className="-mt-4 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
                         />
                       </PieChart>
+                    </ChartContainer>
                     )}
                     </CardContent>
                 </Card>
@@ -814,3 +815,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

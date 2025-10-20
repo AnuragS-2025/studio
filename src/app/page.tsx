@@ -253,8 +253,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // This effect runs when the loading state of investments changes.
-    // If loading has just finished and we have investments, fetch the data.
     if (!investmentsLoading && investments) {
       updateData();
     }

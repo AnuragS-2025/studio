@@ -253,13 +253,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Only run the data fetching logic if investments are loaded and not null
-    if (!investmentsLoading && investments) {
-      updateData(); // Initial fetch
-      const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
-      return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    if (investments) {
+        updateData();
     }
-  }, [investments, investmentsLoading, updateData]);
+  }, [investments]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -813,5 +810,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

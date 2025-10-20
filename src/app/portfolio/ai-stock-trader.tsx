@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -52,7 +53,7 @@ export function AIStockTrader({ marketData }: AIStockTraderProps) {
   const { investments, isLoading: investmentsLoading } = useInvestments();
 
   useEffect(() => {
-    // This will only run on the client, after initial hydration
+    // This will only run on the client, after initial hydration, preventing mismatch
     setDate(new Date());
   }, []);
   

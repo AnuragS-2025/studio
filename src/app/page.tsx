@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -254,14 +253,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-      if (investmentsLoading) {
-          return;
-      }
-      updateData();
-      const intervalId = setInterval(updateData, 300000); 
-  
-      return () => clearInterval(intervalId);
-  }, [investmentsLoading, updateData]);
+    if (investments && !investmentsLoading) {
+        updateData(); // Initial fetch
+        const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
+        return () => clearInterval(intervalId);
+    }
+  }, [investments, investmentsLoading, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -815,5 +812,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

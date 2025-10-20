@@ -253,10 +253,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (investments && !investmentsLoading) {
-        updateData(); // Initial fetch
-        const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
-        return () => clearInterval(intervalId);
+    // Only run the data fetching logic if investments are loaded and not null
+    if (!investmentsLoading && investments) {
+      updateData(); // Initial fetch
+      const intervalId = setInterval(updateData, 300000); // Fetch every 5 minutes
+      return () => clearInterval(intervalId); // Cleanup interval on component unmount
     }
   }, [investments, investmentsLoading, updateData]);
 
@@ -812,3 +813,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

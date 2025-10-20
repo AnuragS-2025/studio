@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -156,3 +155,5 @@ export function AIStockTrader({ marketData }: AIStockTraderProps) {
     </Card>
   );
 }
+
+    

@@ -155,5 +155,3 @@ export function AIStockTrader({ marketData }: AIStockTraderProps) {
     </Card>
   );
 }
-
-    

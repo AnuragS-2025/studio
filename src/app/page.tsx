@@ -253,10 +253,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (investments) {
-        updateData();
+    // Only run this effect when `investmentsLoading` changes.
+    // When it transitions from true to false, and we have investments, fetch the data.
+    if (!investmentsLoading && investments) {
+      updateData();
     }
-  }, [investments]);
+  }, [investmentsLoading, investments, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);

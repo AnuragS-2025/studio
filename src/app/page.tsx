@@ -144,6 +144,7 @@ export default function Home() {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   const isFetching = useRef(false);
+  const initialFetchDone = useRef(false);
   
   const generateChartData = useCallback((base: number, points = 6) => {
     const data = [];
@@ -253,8 +254,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!investmentsLoading && investments) {
-      updateData();
+    if (!investmentsLoading && investments && !initialFetchDone.current) {
+        updateData();
+        initialFetchDone.current = true;
     }
   }, [investmentsLoading, investments, updateData]);
 

@@ -84,7 +84,7 @@ export default function Home() {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   
-  const generateChartData = (base: number, points = 12) => {
+  const generateChartData = useCallback((base: number, points = 12) => {
     const data = [];
     let currentValue = base;
     for (let i = 0; i < points; i++) {
@@ -94,18 +94,102 @@ export default function Home() {
         data.push({ value: Math.round(currentValue * 100) / 100 });
     }
     return data;
+  }, []);
+
+  const [marketData, setMarketData] = useState<MarketStock[]>([]);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
+
+  const { authUser } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const isFetching = useRef(false);
+
+  const fetchStockData = async (symbol: string, apiKey: string) => {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${apiKey}`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data['Global Quote']) {
+        const quote = data['Global Quote'];
+        return {
+          name: symbol,
+          price: parseFloat(quote['05. price']),
+          change: parseFloat(quote['10. change percent'].replace('%', '')),
+        };
+      } else if (data.Note && data.Note.includes('API call frequency')) {
+          console.warn(`Rate limit hit for ${symbol}, skipping...`);
+          return null;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Failed to fetch data for ${symbol}:`, error);
+      return null;
+    }
   };
 
-  const marketData: MarketStock[] = [
-    { name: 'RELIANCE', price: 2950.0, change: 1.5, chartData: generateChartData(2950.0) },
-    { name: 'TCS', price: 3850.0, change: -0.5, chartData: generateChartData(3850.0) },
-    { name: 'HDFCBANK', price: 1680.0, change: 2.2, chartData: generateChartData(1680.0) },
-    { name: 'INFY', price: 1550.0, change: -1.1, chartData: generateChartData(1550.0) },
-    { name: 'ICICIBANK', price: 1100.0, change: 0.8, chartData: generateChartData(1100.0) },
-    { name: 'SBIN', price: 830.0, change: -2.5, chartData: generateChartData(830.0) },
-    { name: 'BHARTIARTL', price: 1400.0, change: 3.1, chartData: generateChartData(1400.0) },
-    { name: 'L&T', price: 3600.0, change: 0.2, chartData: generateChartData(3600.0) },
-  ];
+  const updateData = useCallback(async () => {
+    if (isFetching.current || !investments) return;
+    isFetching.current = true;
+    setIsMarketDataLoading(true);
+    setMarketDataError(null);
+
+    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+      console.error('API key is not configured properly in .env file.');
+      setMarketDataError('The Stock Market API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
+      setIsMarketDataLoading(false);
+      isFetching.current = false;
+      return;
+    }
+
+    const investmentSymbols = investments.map(i => i.symbol);
+    const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols])];
+    const newMarketData: MarketStock[] = [];
+    const updatedInvestments: any[] = [];
+
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+    for (const symbol of allSymbols) {
+      const data = await fetchStockData(symbol, apiKey);
+      if (data) {
+        newMarketData.push({ ...data, chartData: generateChartData(data.price) });
+        const investment = investments.find(i => i.symbol === symbol);
+        if (investment) {
+          updatedInvestments.push({ ...investment, price: data.price, value: data.price * investment.quantity });
+        }
+      }
+      await delay(15000); // 15-second delay to respect API rate limits
+    }
+
+    setMarketData(newMarketData);
+
+    if (updatedInvestments.length > 0 && authUser && firestore) {
+      try {
+        const updatePromises = updatedInvestments.map(inv => {
+          const docRef = doc(firestore, 'users', authUser.uid, 'investments', inv.id);
+          return updateDoc(docRef, { price: inv.price, value: inv.value });
+        });
+        await Promise.all(updatePromises);
+        toast({ title: "Portfolio Updated", description: "Your investment values have been synced with the latest market data." });
+      } catch (error) {
+        console.error("Error updating investments in Firestore:", error);
+        toast({ variant: "destructive", title: "Database Error", description: "Could not update your portfolio in the database." });
+      }
+    }
+
+    setIsMarketDataLoading(false);
+    isFetching.current = false;
+  }, [investments, authUser, firestore, toast, generateChartData]);
+
+  useEffect(() => {
+    if (!investmentsLoading && investments) {
+      updateData();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investmentsLoading, investments]);
+
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -308,52 +392,72 @@ export default function Home() {
                     Real-time stock market trends and insightful analysis.
                 </CardDescription>
                 </CardHeader>
-            </Card>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
-                <Card key={stock.name}>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
-                    <div className={cn("text-sm font-bold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
-                        {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
-                    </div>
-                    </CardHeader>
+                 {marketDataError && (
                     <CardContent>
-                      <div className="text-2xl font-bold">₹{stock.price.toLocaleString('en-IN')}</div>
-                      <div className="h-[120px]">
-                      <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
-                            <LineChart
-                                data={stock.chartData}
-                                margin={{
-                                top: 5,
-                                right: 10,
-                                left: 10,
-                                bottom: 0,
-                                }}
-                            >
-                                <Tooltip
-                                content={
-                                    <ChartTooltipContent
-                                    indicator="dot"
-                                    hideLabel
-                                    formatter={(value) => `₹${value}`}
-                                    />
-                                }
-                                />
-                                <Line
-                                dataKey="value"
-                                type="natural"
-                                stroke="var(--color-value)"
-                                strokeWidth={2}
-                                dot={false}
-                                />
-                            </LineChart>
-                        </ChartContainer>
-                      </div>
+                         <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error Fetching Market Data</AlertTitle>
+                            <AlertDescription>
+                                {marketDataError}
+                            </AlertDescription>
+                        </Alert>
                     </CardContent>
-                </Card>
-                ))}
-            </div>
+                )}
+            </Card>
+             {isMarketDataLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Skeleton className="h-52 w-full" />
+                    <Skeleton className="h-52 w-full" />
+                    <Skeleton className="h-52 w-full" />
+                    <Skeleton className="h-52 w-full" />
+                </div>
+             ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {marketData.filter(stock => DEFAULT_MARKET_SYMBOLS.includes(stock.name)).slice(0, 4).map((stock) => (
+                    <Card key={stock.name}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
+                        <div className={cn("text-sm font-bold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
+                            {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
+                        </div>
+                        </CardHeader>
+                        <CardContent>
+                        <div className="text-2xl font-bold">₹{stock.price.toLocaleString('en-IN')}</div>
+                        <div className="h-[120px]">
+                        <ChartContainer config={marketChartConfig(stock.change)} className="w-full h-full">
+                                <LineChart
+                                    data={stock.chartData}
+                                    margin={{
+                                    top: 5,
+                                    right: 10,
+                                    left: 10,
+                                    bottom: 0,
+                                    }}
+                                >
+                                    <Tooltip
+                                    content={
+                                        <ChartTooltipContent
+                                        indicator="dot"
+                                        hideLabel
+                                        formatter={(value) => `₹${value}`}
+                                        />
+                                    }
+                                    />
+                                    <Line
+                                    dataKey="value"
+                                    type="natural"
+                                    stroke="var(--color-value)"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    />
+                                </LineChart>
+                            </ChartContainer>
+                        </div>
+                        </CardContent>
+                    </Card>
+                    ))}
+                </div>
+             )}
             <Card>
                 <CardHeader className="flex items-center justify-between flex-row">
                     <div className="space-y-1.5">
@@ -366,26 +470,28 @@ export default function Home() {
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead className="text-right">Change</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {displayedMovers.map((stock) => (
-                        <TableRow key={stock.name}>
-                            <TableCell className="font-medium">{stock.name}</TableCell>
-                            <TableCell>₹{stock.price.toLocaleString('en-IN')}</TableCell>
-                            <TableCell className={cn("text-right font-semibold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
-                            {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                    {isMarketDataLoading ? <div className="p-4"><Skeleton className="h-24 w-full" /></div> : (
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>Asset</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead className="text-right">Change</TableHead>
+                            </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {displayedMovers.map((stock) => (
+                                <TableRow key={stock.name}>
+                                    <TableCell className="font-medium">{stock.name}</TableCell>
+                                    <TableCell>₹{stock.price.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className={cn("text-right font-semibold", stock.change >= 0 ? "text-green-500" : "text-red-500")}>
+                                    {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}%
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </section>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -254,7 +255,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Only run this effect if investments have loaded and the initial fetch hasn't been done.
     if (!investmentsLoading && investments && !initialFetchDone.current) {
+        // Mark that the initial fetch is about to happen.
         initialFetchDone.current = true;
         updateData();
     }

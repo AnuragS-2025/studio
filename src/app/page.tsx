@@ -155,7 +155,7 @@ export default function Home() {
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
-  const isFetching = useRef(false);
+  const initialFetchDone = useRef(false);
   
   const generateChartData = useCallback((base: number, points = 6) => {
     const data = [];
@@ -168,11 +168,8 @@ export default function Home() {
   }, []);
   
   const updateData = useCallback(async () => {
-    if (isFetching.current) return;
-    isFetching.current = true;
     setIsMarketDataLoading(true);
     setMarketDataError(null);
-
     console.log('Starting market data update...');
 
     const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
@@ -184,7 +181,6 @@ export default function Home() {
         console.error(errorMsg);
         setMarketDataError(errorMsg);
         setIsMarketDataLoading(false);
-        isFetching.current = false;
         return;
     }
 
@@ -194,7 +190,6 @@ export default function Home() {
 
     if (allSymbols.length === 0) {
       setIsMarketDataLoading(false);
-      isFetching.current = false;
       return;
     }
     
@@ -234,7 +229,6 @@ export default function Home() {
         }
     }
 
-    isFetching.current = false;
     setIsMarketDataLoading(false);
   }, [investments, authUser, firestore, toast, generateChartData]);
   
@@ -261,8 +255,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!investmentsLoading && investments && !isFetching.current) {
+    if (!investmentsLoading && investments && !initialFetchDone.current) {
         console.log('Triggering initial market data fetch');
+        initialFetchDone.current = true;
         updateData();
     }
   }, [investmentsLoading, investments, updateData]);

@@ -154,6 +154,7 @@ export default function Home() {
   const updateData = useCallback(async () => {
     if (isMarketDataLoading) return;
 
+    setMarketData([]); // Clear previous data to show skeletons
     setIsMarketDataLoading(true);
     setMarketDataError(null);
 
@@ -170,7 +171,6 @@ export default function Home() {
     for (const symbol of allSymbols) {
         const stockData = await fetchStockData(symbol, apiKey);
         if (stockData) {
-            const existingStock = marketData.find(s => s.name === symbol);
             newMarketData.push({
                 name: symbol,
                 price: stockData.price,
@@ -186,12 +186,11 @@ export default function Home() {
 
       if (firestore && authUser && investments) {
           const batch = writeBatch(firestore);
-          const investmentsColRef = collection(firestore, 'users', authUser.uid, 'investments');
           
           investments.forEach(investment => {
               const updatedStock = newMarketData.find(s => s.name === investment.symbol);
               if (updatedStock) {
-                  const docRef = doc(investmentsColRef, investment.id);
+                  const docRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
                   const newPrice = updatedStock.price;
                   const newValue = investment.quantity * newPrice;
                   batch.update(docRef, { price: newPrice, value: newValue });
@@ -213,10 +212,12 @@ export default function Home() {
               });
           }
       }
+    } else {
+      setMarketDataError("Failed to fetch any market data. Please check your API key and network connection.");
     }
     
     setIsMarketDataLoading(false);
-  }, [investments, authUser, firestore, toast, isMarketDataLoading, marketData]);
+  }, [investments, authUser, firestore, toast, isMarketDataLoading]);
 
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
@@ -788,5 +789,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     

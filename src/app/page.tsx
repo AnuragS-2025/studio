@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -48,7 +49,7 @@ import { RemoveTransactionButton } from "./expenses/remove-transaction-button";
 import { RemoveInvestmentButton } from "./portfolio/remove-investment-button";
 import { AddInvestmentForm } from "./portfolio/add-investment-form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
@@ -64,75 +65,8 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
-const SYMBOL_MAP: { [key: string]: string } = {
-    'RELIANCE': 'RELIANCE.BSE',
-    'TCS': 'TCS.BSE',
-    'HDFCBANK': 'HDFCBANK.BSE',
-    'INFY': 'INFY.BSE',
-    'ICICIBANK': 'ICICIBANK.BSE',
-    'SBIN': 'SBIN.BSE',
-    'BHARTIARTL': 'BHARTIARTL.BSE',
-    'L&T': 'LT.BSE',
-    'HINDUNILVR': 'HINDUNILVR.BSE',
-    'ITC': 'ITC.BSE',
-};
-
 const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN', 'BHARTIARTL', 'L&T', 'HINDUNILVR', 'ITC'];
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function fetchStockData(symbol: string, apiKey: string) {
-    const alphaVantageSymbol = SYMBOL_MAP[symbol.toUpperCase()] || symbol.toUpperCase();
-    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
-
-    try {
-        console.log(`Fetching data for: ${symbol}`);
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.Note && data.Note.includes('API call frequency')) {
-            console.warn(`Rate limit hit for ${symbol}, skipping...`);
-            return null;
-        }
-
-        if (data.Note || !data['Time Series (Daily)']) {
-            console.warn(`Alpha Vantage API call limit or error for ${symbol}:`, data.Note || 'No time series data');
-            return null;
-        }
-        
-        const timeSeries = data['Time Series (Daily)'];
-        const sortedDates = Object.keys(timeSeries)
-            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-        
-        const latestDate = sortedDates[0];
-        const secondLatestDate = sortedDates[1];
-        
-        if (latestDate && secondLatestDate) {
-            const latestData = timeSeries[latestDate];
-            const previousData = timeSeries[secondLatestDate];
-
-            const price = parseFloat(latestData['4. close']);
-            const prevClose = parseFloat(previousData['4. close']);
-            
-            if (!isNaN(price) && !isNaN(prevClose)) {
-                const changePercent = ((price - prevClose) / prevClose) * 100;
-                 console.log(`Result for ${symbol}: Success`);
-                return {
-                    symbol: symbol,
-                    price: price,
-                    change: changePercent,
-                };
-            }
-        }
-        console.warn(`Could not determine price or change for ${symbol}`);
-        console.log(`Result for ${symbol}: Failed`);
-        return null;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown fetch error';
-        console.error(`Error fetching data for ${symbol}:`, message);
-        return null;
-    }
-}
 
 export default function Home() {
   const { user } = useUserData();
@@ -149,13 +83,9 @@ export default function Home() {
   const totalExpenses = useTotalExpenses(transactions);
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
-  const [marketData, setMarketData] = useState<MarketStock[]>([]);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
-  const [marketDataError, setMarketDataError] = useState<string | null>(null);
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
-  const initialFetchDone = useRef(false);
   
   const generateChartData = useCallback((base: number, points = 6) => {
     const data = [];
@@ -166,71 +96,20 @@ export default function Home() {
     }
     return data;
   }, []);
-  
-  const updateData = useCallback(async () => {
-    setIsMarketDataLoading(true);
-    setMarketDataError(null);
-    console.log('Starting market data update...');
 
-    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-    const isApiKeyConfigured = !!apiKey && apiKey !== 'YOUR_API_KEY_HERE';
-    console.log('API Key configured:', isApiKeyConfigured);
-    
-    if (!isApiKeyConfigured) {
-        const errorMsg = "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.";
-        console.error(errorMsg);
-        setMarketDataError(errorMsg);
-        setIsMarketDataLoading(false);
-        return;
-    }
+  const marketData: MarketStock[] = useMemo(() => [
+    { name: 'RELIANCE', price: 2980.50, change: 1.82, chartData: generateChartData(2980.50) },
+    { name: 'TCS', price: 3825.10, change: -0.65, chartData: generateChartData(3825.10) },
+    { name: 'HDFCBANK', price: 1705.75, change: 2.30, chartData: generateChartData(1705.75) },
+    { name: 'INFY', price: 1540.45, change: -1.15, chartData: generateChartData(1540.45) },
+    { name: 'ICICIBANK', price: 1120.90, change: 1.25, chartData: generateChartData(1120.90) },
+    { name: 'SBIN', price: 830.20, change: 0.78, chartData: generateChartData(830.20) },
+    { name: 'BHARTIARTL', price: 1405.00, change: -0.21, chartData: generateChartData(1405.00) },
+    { name: 'L&T', price: 3580.00, change: 3.10, chartData: generateChartData(3580.00) },
+  ], [generateChartData]);
 
-    const investmentSymbols = investments?.map(inv => inv.symbol) || [];
-    const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
-    const allSymbols = Array.from(allSymbolsSet);
-
-    if (allSymbols.length === 0) {
-      setIsMarketDataLoading(false);
-      return;
-    }
-    
-    const liveDataMap = new Map<string, { price: number, change: number }>();
-    let fetchedStockCount = 0;
-    let newMarketData: MarketStock[] = [];
-
-    for (const symbol of allSymbols) {
-        const data = await fetchStockData(symbol, apiKey);
-        if (data) {
-            fetchedStockCount++;
-            liveDataMap.set(symbol, data);
-            newMarketData.push({ name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) });
-        }
-        if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
-           await delay(15000); // Respect API rate limit
-        }
-    }
-    
-    setMarketData(newMarketData);
-
-    if (fetchedStockCount > 0 && authUser && firestore && investments) {
-        for (const investment of investments) {
-            const marketInfo = liveDataMap.get(investment.symbol);
-            if (marketInfo) {
-                const newPrice = marketInfo.price;
-                const newValue = investment.quantity * newPrice;
-
-                if (newPrice !== investment.price || newValue !== investment.value) {
-                    const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                    await updateDoc(investmentRef, {
-                        price: newPrice,
-                        value: newValue
-                    });
-                }
-            }
-        }
-    }
-
-    setIsMarketDataLoading(false);
-  }, [investments, authUser, firestore, toast, generateChartData]);
+  const isMarketDataLoading = false;
+  const marketDataError = null;
   
   useEffect(() => {
     const handleHashChange = () => {
@@ -253,14 +132,6 @@ export default function Home() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
-
-  useEffect(() => {
-    if (!investmentsLoading && investments && !initialFetchDone.current) {
-        console.log('Triggering initial market data fetch');
-        initialFetchDone.current = true;
-        updateData();
-    }
-  }, [investmentsLoading, investments, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -823,5 +694,9 @@ export default function Home() {
     </div>
   );
 }
+
+    
+
+    
 
     

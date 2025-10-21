@@ -65,6 +65,8 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
+type MarketDataStatus = 'idle' | 'loading' | 'success' | 'error';
+
 const DEFAULT_MARKET_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN', 'BHARTIARTL', 'L&T', 'HINDUNILVR', 'ITC'];
 
 
@@ -97,13 +99,12 @@ export default function Home() {
   }, []);
 
   const [marketData, setMarketData] = useState<MarketStock[]>([]);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus>('idle');
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
   const { authUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const isFetching = useRef(false);
 
   const fetchStockData = async (symbol: string, apiKey: string) => {
     const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${apiKey}`;
@@ -130,21 +131,15 @@ export default function Home() {
   };
 
   const updateData = useCallback(async () => {
-    if (isFetching.current || !investments) return;
+    if (!investments) return;
 
-    console.log('Starting market data update...');
-    isFetching.current = true;
-    setIsMarketDataLoading(true);
+    setMarketDataStatus('loading');
     setMarketDataError(null);
 
     const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-    console.log('API Key configured:', !!apiKey && apiKey !== 'YOUR_API_KEY_HERE');
-
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-      console.error('API key is not configured properly in .env file.');
       setMarketDataError('The Stock Market API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
-      setIsMarketDataLoading(false);
-      isFetching.current = false;
+      setMarketDataStatus('error');
       return;
     }
 
@@ -156,22 +151,19 @@ export default function Home() {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     for (const symbol of allSymbols) {
-        console.log(`Fetching data for: ${symbol}`);
         const data = await fetchStockData(symbol, apiKey);
-        console.log(`Result for ${symbol}:`, data ? 'Success' : 'Failed');
         if (data && data !== 'rate-limit') {
             newMarketData.push({ ...data, chartData: generateChartData(data.price) });
             const investment = investments.find(i => i.symbol === symbol);
             if (investment) {
-            updatedInvestments.push({ ...investment, price: data.price, value: data.price * investment.quantity });
+              updatedInvestments.push({ ...investment, price: data.price, value: data.price * investment.quantity });
             }
         }
-        
-        // Respect API rate limits
         await delay(15000); 
     }
-
+    
     setMarketData(newMarketData);
+    setMarketDataStatus('success');
 
     if (updatedInvestments.length > 0 && authUser && firestore) {
       try {
@@ -187,19 +179,13 @@ export default function Home() {
         toast({ variant: "destructive", title: "Database Error", description: "Could not update your portfolio in the database." });
       }
     }
-
-    setIsMarketDataLoading(false);
-    isFetching.current = false;
-    console.log('Finished market data update.');
   }, [investments, authUser, firestore, toast, generateChartData]);
   
   useEffect(() => {
-    // This effect runs when the loading state of investments changes.
-    // It ensures we only try to fetch market data once the investments are actually loaded.
-    if (!investmentsLoading && investments && !isFetching.current && marketData.length === 0) {
+    if (!investmentsLoading && investments && marketDataStatus === 'idle') {
         updateData();
     }
-  }, [investmentsLoading, investments, updateData, marketData.length]);
+  }, [investmentsLoading, investments, marketDataStatus, updateData]);
 
 
   const topMovers = useMemo(() => 
@@ -224,6 +210,8 @@ export default function Home() {
           color: change >= 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'
       }
   });
+  
+  const isMarketDataLoading = marketDataStatus === 'loading' || marketDataStatus === 'idle';
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -407,7 +395,7 @@ export default function Home() {
                     Real-time stock market trends and insightful analysis.
                 </CardDescription>
                 </CardHeader>
-                 {marketDataError && (
+                 {marketDataStatus === 'error' && (
                     <CardContent>
                          <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />

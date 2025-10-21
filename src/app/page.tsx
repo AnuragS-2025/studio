@@ -188,13 +188,14 @@ export default function Home() {
   }, [investments, authUser, firestore, toast, generateChartData]);
 
   useEffect(() => {
-    // More robust condition to trigger the initial fetch
-    if (!investmentsLoading && investments && !initialFetchDone.current && marketData.length === 0) {
+    // This effect runs when the investments are loaded.
+    // It will trigger the data fetch only once.
+    if (!investmentsLoading && investments && !initialFetchDone.current) {
         console.log('Triggering initial market data fetch');
-        initialFetchDone.current = true;
+        initialFetchDone.current = true; // Mark as done to prevent re-fetching
         updateData();
     }
-  }, [investmentsLoading, investments, marketData.length, updateData]);
+  }, [investmentsLoading, investments, updateData]);
 
   const topMovers = marketData.length > 0 ? [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)) : [];
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -757,5 +758,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

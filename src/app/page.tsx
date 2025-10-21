@@ -321,7 +321,8 @@ export default function Home() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3
+/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -822,3 +823,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

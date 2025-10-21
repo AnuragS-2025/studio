@@ -28,6 +28,8 @@ import {
   Sparkles,
   ChevronDown,
   AlertCircle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/overview";
@@ -53,7 +55,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AIStockTrader } from "./portfolio/ai-stock-trader";
 import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -65,24 +67,7 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
-
-export default function Home() {
-  const { user } = useUserData();
-  const { transactions, isLoading: transactionsLoading } = useTransactions();
-  const { recentTransactions, isLoading: recentTransactionsLoading } = useRecentTransactions(5);
-  const { investments, isLoading: investmentsLoading } = useInvestments();
-  const { budgets, isLoading: budgetsLoading } = useBudgets();
-
-  const portfolioValue = usePortfolioValue(investments);
-  const totalIncome = useTotalIncome(transactions);
-  const totalExpenses = useTotalExpenses(transactions);
-  const expenseByCategory = useExpenseByCategoryData(transactions);
-
-  const [showAllMovers, setShowAllMovers] = useState(false);
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
-  const [activeTab, setActiveTab] = useState('advisor');
-  
-  const generateChartData = (base: number, points = 12) => {
+const generateChartData = (base: number, points = 12) => {
     const data = [];
     let currentValue = base;
     for (let i = 0; i < points; i++) {
@@ -92,9 +77,9 @@ export default function Home() {
         data.push({ value: Math.round(currentValue * 100) / 100 });
     }
     return data;
-  };
+};
 
-  const marketData: MarketStock[] = useMemo(() => [
+const MOCK_MARKET_DATA: MarketStock[] = [
     { name: 'RELIANCE', price: 2950.0, change: 1.2, chartData: generateChartData(2950) },
     { name: 'TCS', price: 3850.0, change: -0.5, chartData: generateChartData(3850) },
     { name: 'HDFCBANK', price: 1680.0, change: 2.3, chartData: generateChartData(1680) },
@@ -105,7 +90,133 @@ export default function Home() {
     { name: 'L&T', price: 3600.0, change: -0.9, chartData: generateChartData(3600) },
     { name: 'HINDUNILVR', price: 2500.0, change: 0.3, chartData: generateChartData(2500) },
     { name: 'ITC', price: 430.0, change: 0.1, chartData: generateChartData(430) },
-  ], []);
+];
+
+export default function Home() {
+  const { user: authUser } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  
+  const { user } = useUserData();
+  const { transactions, isLoading: transactionsLoading } = useTransactions();
+  const { recentTransactions, isLoading: recentTransactionsLoading } = useRecentTransactions(5);
+  const { investments, isLoading: investmentsLoading } = useInvestments();
+  const { budgets, isLoading: budgetsLoading } = useBudgets();
+  
+  const [marketData, setMarketData] = useState<MarketStock[]>(MOCK_MARKET_DATA);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
+
+  const portfolioValue = usePortfolioValue(investments, marketData);
+  const totalIncome = useTotalIncome(transactions);
+  const totalExpenses = useTotalExpenses(transactions);
+  const expenseByCategory = useExpenseByCategoryData(transactions);
+
+  const [showAllMovers, setShowAllMovers] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [activeTab, setActiveTab] = useState('advisor');
+  
+  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+  const fetchStockData = async (symbol: string, apiKey: string) => {
+    try {
+        const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${apiKey}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch data for ${symbol}`);
+        }
+        const data = await response.json();
+
+        if (data.Note && data.Note.includes('API call frequency')) {
+            console.warn(`Rate limit hit for ${symbol}, skipping...`);
+            toast({
+                variant: 'destructive',
+                title: 'API Rate Limit',
+                description: `Rate limit hit for ${symbol}. Please wait before refreshing.`,
+            });
+            return null;
+        }
+
+        const quote = data['Global Quote'];
+        if (!quote || Object.keys(quote).length === 0) {
+            console.warn(`No data found for symbol: ${symbol}`);
+            return null;
+        }
+        return {
+            price: parseFloat(quote['05. price']),
+            change: parseFloat(quote['10. change percent'].replace('%', '')),
+        };
+    } catch (error) {
+        console.error(`Error fetching data for ${symbol}:`, error);
+        return null;
+    }
+  };
+  
+  const updateData = useCallback(async () => {
+    if (isMarketDataLoading) return;
+
+    setIsMarketDataLoading(true);
+    setMarketDataError(null);
+
+    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+        setMarketDataError('Alpha Vantage API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
+        setIsMarketDataLoading(false);
+        return;
+    }
+
+    const allSymbols = [...new Set(investments?.map(i => i.symbol).concat(MOCK_MARKET_DATA.map(m => m.name)))];
+    const newMarketData: MarketStock[] = [];
+
+    for (const symbol of allSymbols) {
+        const stockData = await fetchStockData(symbol, apiKey);
+        if (stockData) {
+            const existingStock = marketData.find(s => s.name === symbol);
+            newMarketData.push({
+                name: symbol,
+                price: stockData.price,
+                change: stockData.change,
+                chartData: generateChartData(stockData.price),
+            });
+        }
+        await delay(15000); // 15-second delay
+    }
+
+    if (newMarketData.length > 0) {
+      setMarketData(newMarketData);
+
+      if (firestore && authUser && investments) {
+          const batch = writeBatch(firestore);
+          const investmentsColRef = collection(firestore, 'users', authUser.uid, 'investments');
+          
+          investments.forEach(investment => {
+              const updatedStock = newMarketData.find(s => s.name === investment.symbol);
+              if (updatedStock) {
+                  const docRef = doc(investmentsColRef, investment.id);
+                  const newPrice = updatedStock.price;
+                  const newValue = investment.quantity * newPrice;
+                  batch.update(docRef, { price: newPrice, value: newValue });
+              }
+          });
+          
+          try {
+              await batch.commit();
+              toast({
+                  title: 'Portfolio Updated',
+                  description: 'Your portfolio values have been updated with the latest market prices.',
+              });
+          } catch (e) {
+              console.error("Error batch updating portfolio:", e);
+              toast({
+                  variant: "destructive",
+                  title: "Portfolio Update Failed",
+                  description: "Could not update your portfolio values in the database."
+              });
+          }
+      }
+    }
+    
+    setIsMarketDataLoading(false);
+  }, [investments, authUser, firestore, toast, isMarketDataLoading, marketData]);
 
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
@@ -146,7 +257,7 @@ export default function Home() {
               <CardContent>
                 {investmentsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{portfolioValue.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
-                  +2.1% from last month
+                  Based on latest market data
                 </p>
               </CardContent>
             </Card>
@@ -170,8 +281,7 @@ export default function Home() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? <Skeleton className="h-8 w-3
-/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</div>}
+                {transactionsLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</div>}
                 <p className="text-xs text-muted-foreground">
                   This month
                 </p>
@@ -306,15 +416,43 @@ export default function Home() {
         {/* Market Section */}
         <section id="market" className="space-y-4 scroll-m-20">
             <Card>
-                <CardHeader>
-                <CardTitle>Market Analysis</CardTitle>
-                <CardDescription>
-                    Real-time stock market trends and insightful analysis.
-                </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Market Analysis</CardTitle>
+                    <CardDescription>
+                        Real-time stock market trends and insightful analysis.
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={updateData} disabled={isMarketDataLoading}>
+                    {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Refresh Data</span>
+                  </Button>
                 </CardHeader>
+                {marketDataError && (
+                  <CardContent>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error Fetching Market Data</AlertTitle>
+                      <AlertDescription>{marketDataError}</AlertDescription>
+                    </Alert>
+                  </CardContent>
+                )}
             </Card>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {marketData.slice(0, 4).map((stock) => (
+                {isMarketDataLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-12" />
+                      </CardHeader>
+                      <CardContent>
+                        <Skeleton className="h-8 w-28 mb-2" />
+                        <Skeleton className="h-[120px] w-full" />
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : marketData.slice(0, 4).map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -370,6 +508,14 @@ export default function Home() {
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
+                  {isMarketDataLoading && displayedMovers.length === 0 ? (
+                    <div className="space-y-px p-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -390,6 +536,7 @@ export default function Home() {
                             ))}
                         </TableBody>
                     </Table>
+                  )}
                 </CardContent>
             </Card>
         </section>
@@ -641,3 +788,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

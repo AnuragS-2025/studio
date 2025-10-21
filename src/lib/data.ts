@@ -192,12 +192,29 @@ export const useBudgets = () => {
 
 // --- Data Calculation Hooks ---
 
-export const usePortfolioValue = (investments: Investment[] | null) => {
+interface MarketStock {
+  name: string;
+  price: number;
+}
+
+export const usePortfolioValue = (investments: Investment[] | null, marketData: MarketStock[] | null) => {
     return useMemo(() => {
         if (!investments) return 0;
+        
+        // If we have live market data, use it to calculate a more accurate portfolio value
+        if (marketData && marketData.length > 0) {
+            return investments.reduce((sum, investment) => {
+                const liveStock = marketData.find(s => s.name === investment.symbol);
+                const currentValue = liveStock ? liveStock.price * investment.quantity : investment.value;
+                return sum + currentValue;
+            }, 0);
+        }
+        
+        // Fallback to the value stored in Firestore if no live data is available
         return investments.reduce((sum, investment) => sum + investment.value, 0);
-    }, [investments]);
+    }, [investments, marketData]);
 };
+
 
 export const useTotalIncome = (transactions: Transaction[] | null) => {
     return useMemo(() => {
@@ -260,6 +277,5 @@ export const addTransaction = async (userId: string, transaction: Omit<Transacti
     // const adminDb = getFirestore();
     // await adminDb.collection('users').doc(userId).collection('transactions').add(transaction);
 };
-
 
     

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -27,6 +26,7 @@ import {
   PlusCircle,
   Sparkles,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/overview";
@@ -54,6 +54,8 @@ import { Icons } from "@/components/icons";
 import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 interface MarketStock {
   name: string;
@@ -149,11 +151,11 @@ export default function Home() {
 
   const [marketData, setMarketData] = useState<MarketStock[]>([]);
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
   const [showAllMovers, setShowAllMovers] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   const isFetching = useRef(false);
-  const initialFetchDone = useRef(false);
   
   const generateChartData = useCallback((base: number, points = 6) => {
     const data = [];
@@ -166,9 +168,10 @@ export default function Home() {
   }, []);
   
   const updateData = useCallback(async () => {
-    if (isFetching.current || !investments) return;
+    if (isFetching.current) return;
     isFetching.current = true;
     setIsMarketDataLoading(true);
+    setMarketDataError(null);
 
     console.log('Starting market data update...');
 
@@ -177,18 +180,15 @@ export default function Home() {
     console.log('API Key configured:', isApiKeyConfigured);
     
     if (!isApiKeyConfigured) {
-        console.error('API key is not configured properly');
-        toast({
-            variant: "destructive",
-            title: "API Error",
-            description: "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.",
-        });
+        const errorMsg = "API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.";
+        console.error(errorMsg);
+        setMarketDataError(errorMsg);
         setIsMarketDataLoading(false);
         isFetching.current = false;
         return;
     }
 
-    const investmentSymbols = investments.map(inv => inv.symbol) || [];
+    const investmentSymbols = investments?.map(inv => inv.symbol) || [];
     const allSymbolsSet = new Set([...DEFAULT_MARKET_SYMBOLS, ...investmentSymbols]);
     const allSymbols = Array.from(allSymbolsSet);
 
@@ -200,30 +200,23 @@ export default function Home() {
     
     const liveDataMap = new Map<string, { price: number, change: number }>();
     let fetchedStockCount = 0;
+    let newMarketData: MarketStock[] = [];
 
     for (const symbol of allSymbols) {
         const data = await fetchStockData(symbol, apiKey);
         if (data) {
             fetchedStockCount++;
             liveDataMap.set(symbol, data);
-            setMarketData(currentData => {
-                const existingStockIndex = currentData.findIndex(s => s.name === symbol);
-                const newStockData = { name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) };
-                if (existingStockIndex > -1) {
-                    const newData = [...currentData];
-                    newData[existingStockIndex] = newStockData;
-                    return newData;
-                } else {
-                    return [...currentData, newStockData];
-                }
-            });
+            newMarketData.push({ name: symbol, price: data.price, change: data.change, chartData: generateChartData(data.price) });
         }
         if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
            await delay(15000); // Respect API rate limit
         }
     }
+    
+    setMarketData(newMarketData);
 
-    if (fetchedStockCount > 0 && authUser && firestore) {
+    if (fetchedStockCount > 0 && authUser && firestore && investments) {
         for (const investment of investments) {
             const marketInfo = liveDataMap.get(investment.symbol);
             if (marketInfo) {
@@ -268,12 +261,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!investmentsLoading && investments && !initialFetchDone.current && marketData.length === 0) {
+    if (!investmentsLoading && investments && !isFetching.current) {
         console.log('Triggering initial market data fetch');
-        initialFetchDone.current = true;
         updateData();
     }
-  }, [investmentsLoading, investments, marketData.length, updateData]);
+  }, [investmentsLoading, investments, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
@@ -476,7 +468,15 @@ export default function Home() {
                 </CardDescription>
                 </CardHeader>
             </Card>
-            {isMarketDataLoading ? (
+            {marketDataError ? (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error Fetching Market Data</AlertTitle>
+                    <AlertDescription>
+                        {marketDataError}
+                    </AlertDescription>
+                </Alert>
+            ) : isMarketDataLoading ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
                         <Card key={i}>
@@ -827,5 +827,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

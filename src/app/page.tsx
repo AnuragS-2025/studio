@@ -84,8 +84,14 @@ async function fetchStockData(symbol: string, apiKey: string) {
     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${alphaVantageSymbol}&apikey=${apiKey}`;
 
     try {
+        console.log(`Fetching data for: ${symbol}`);
         const response = await fetch(url);
         const data = await response.json();
+
+        if (data.Note && data.Note.includes('API call frequency')) {
+            console.warn(`Rate limit hit for ${symbol}, skipping...`);
+            return null;
+        }
 
         if (data.Note || !data['Time Series (Daily)']) {
             console.warn(`Alpha Vantage API call limit or error for ${symbol}:`, data.Note || 'No time series data');
@@ -108,6 +114,7 @@ async function fetchStockData(symbol: string, apiKey: string) {
             
             if (!isNaN(price) && !isNaN(prevClose)) {
                 const changePercent = ((price - prevClose) / prevClose) * 100;
+                 console.log(`Result for ${symbol}: Success`);
                 return {
                     symbol: symbol,
                     price: price,
@@ -116,6 +123,7 @@ async function fetchStockData(symbol: string, apiKey: string) {
             }
         }
         console.warn(`Could not determine price or change for ${symbol}`);
+        console.log(`Result for ${symbol}: Failed`);
         return null;
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown fetch error';
@@ -162,9 +170,14 @@ export default function Home() {
     isFetching.current = true;
     setIsMarketDataLoading(true);
 
+    console.log('Starting market data update...');
+
     const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-        console.error('API key is not configured.');
+    const isApiKeyConfigured = !!apiKey && apiKey !== 'YOUR_API_KEY_HERE';
+    console.log('API Key configured:', isApiKeyConfigured);
+    
+    if (!isApiKeyConfigured) {
+        console.error('API key is not configured properly');
         toast({
             variant: "destructive",
             title: "API Error",
@@ -206,7 +219,7 @@ export default function Home() {
             });
         }
         if (allSymbols.indexOf(symbol) < allSymbols.length - 1) {
-           await delay(13000); // Respect API rate limit
+           await delay(15000); // Respect API rate limit
         }
     }
 
@@ -255,13 +268,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Only run this effect if investments have loaded and the initial fetch hasn't been done.
-    if (!investmentsLoading && investments && !initialFetchDone.current) {
-        // Mark that the initial fetch is about to happen.
+    if (!investmentsLoading && investments && !initialFetchDone.current && marketData.length === 0) {
+        console.log('Triggering initial market data fetch');
         initialFetchDone.current = true;
         updateData();
     }
-  }, [investmentsLoading, investments, updateData]);
+  }, [investmentsLoading, investments, marketData.length, updateData]);
 
   const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);

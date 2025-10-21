@@ -254,10 +254,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Only run the effect if investments are loaded and the initial fetch hasn't been done.
     if (!investmentsLoading && investments && !initialFetchDone.current) {
-      updateData();
-      initialFetchDone.current = true; // Mark that the initial fetch has been attempted.
+        initialFetchDone.current = true;
+        updateData();
     }
   }, [investmentsLoading, investments, updateData]);
 

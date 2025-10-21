@@ -110,7 +110,7 @@ export default function Home() {
     try {
       const response = await fetch(url);
       const data = await response.json();
-      if (data['Global Quote']) {
+      if (data['Global Quote'] && Object.keys(data['Global Quote']).length > 0) {
         const quote = data['Global Quote'];
         return {
           name: symbol,
@@ -118,9 +118,10 @@ export default function Home() {
           change: parseFloat(quote['10. change percent'].replace('%', '')),
         };
       } else if (data.Note && data.Note.includes('API call frequency')) {
-          console.warn(`Rate limit hit for ${symbol}, skipping...`);
-          return null;
+          console.warn(`Rate limit hit for ${symbol}, will retry or skip.`);
+          return 'rate-limit';
       }
+      console.warn(`No data or empty Global Quote for ${symbol}:`, data);
       return null;
     } catch (error) {
       console.error(`Failed to fetch data for ${symbol}:`, error);
@@ -130,11 +131,14 @@ export default function Home() {
 
   const updateData = useCallback(async () => {
     if (isFetching.current || !investments) return;
+
+    console.log('Starting market data update...');
     isFetching.current = true;
     setIsMarketDataLoading(true);
     setMarketDataError(null);
 
     const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+    console.log('API Key configured:', !!apiKey && apiKey !== 'YOUR_API_KEY_HERE');
 
     if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
       console.error('API key is not configured properly in .env file.');
@@ -152,15 +156,19 @@ export default function Home() {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     for (const symbol of allSymbols) {
-      const data = await fetchStockData(symbol, apiKey);
-      if (data) {
-        newMarketData.push({ ...data, chartData: generateChartData(data.price) });
-        const investment = investments.find(i => i.symbol === symbol);
-        if (investment) {
-          updatedInvestments.push({ ...investment, price: data.price, value: data.price * investment.quantity });
+        console.log(`Fetching data for: ${symbol}`);
+        const data = await fetchStockData(symbol, apiKey);
+        console.log(`Result for ${symbol}:`, data ? 'Success' : 'Failed');
+        if (data && data !== 'rate-limit') {
+            newMarketData.push({ ...data, chartData: generateChartData(data.price) });
+            const investment = investments.find(i => i.symbol === symbol);
+            if (investment) {
+            updatedInvestments.push({ ...investment, price: data.price, value: data.price * investment.quantity });
+            }
         }
-      }
-      await delay(15000); // 15-second delay to respect API rate limits
+        
+        // Respect API rate limits
+        await delay(15000); 
     }
 
     setMarketData(newMarketData);
@@ -168,6 +176,7 @@ export default function Home() {
     if (updatedInvestments.length > 0 && authUser && firestore) {
       try {
         const updatePromises = updatedInvestments.map(inv => {
+          if (!inv.id) return Promise.resolve();
           const docRef = doc(firestore, 'users', authUser.uid, 'investments', inv.id);
           return updateDoc(docRef, { price: inv.price, value: inv.value });
         });
@@ -181,17 +190,23 @@ export default function Home() {
 
     setIsMarketDataLoading(false);
     isFetching.current = false;
+    console.log('Finished market data update.');
   }, [investments, authUser, firestore, toast, generateChartData]);
-
+  
   useEffect(() => {
-    if (!investmentsLoading && investments) {
-      updateData();
+    // This effect runs when the loading state of investments changes.
+    // It ensures we only try to fetch market data once the investments are actually loaded.
+    if (!investmentsLoading && investments && !isFetching.current && marketData.length === 0) {
+        updateData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [investmentsLoading, investments]);
+  }, [investmentsLoading, investments, updateData, marketData.length]);
 
 
-  const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const topMovers = useMemo(() => 
+    [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
+    [marketData]
+  );
+  
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 

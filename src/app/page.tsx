@@ -87,53 +87,116 @@ export default function Home() {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   
-  const generateChartData = useCallback((base: number, points = 6) => {
+  const [marketData, setMarketData] = useState<MarketStock[]>([]);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
+
+  const initialFetchDone = useRef(false);
+  const isFetching = useRef(false);
+  
+  const generateChartData = useCallback((base: number, points = 12) => {
     const data = [];
     let currentValue = base;
     for (let i = 0; i < points; i++) {
-        currentValue += (Math.random() - 0.5) * (base * 0.1); 
-        data.push({ value: Math.round(currentValue) });
+        const volatility = (Math.random() - 0.5) * 2; // -1 to 1
+        currentValue += volatility * (base * 0.05); // 5% volatility
+        if (currentValue <= 0) currentValue = base * 0.1; // Prevent zero or negative prices
+        data.push({ value: Math.round(currentValue * 100) / 100 });
     }
     return data;
   }, []);
 
-  const marketData: MarketStock[] = useMemo(() => [
-    { name: 'RELIANCE', price: 2980.50, change: 1.82, chartData: generateChartData(2980.50) },
-    { name: 'TCS', price: 3825.10, change: -0.65, chartData: generateChartData(3825.10) },
-    { name: 'HDFCBANK', price: 1705.75, change: 2.30, chartData: generateChartData(1705.75) },
-    { name: 'INFY', price: 1540.45, change: -1.15, chartData: generateChartData(1540.45) },
-    { name: 'ICICIBANK', price: 1120.90, change: 1.25, chartData: generateChartData(1120.90) },
-    { name: 'SBIN', price: 830.20, change: 0.78, chartData: generateChartData(830.20) },
-    { name: 'BHARTIARTL', price: 1405.00, change: -0.21, chartData: generateChartData(1405.00) },
-    { name: 'L&T', price: 3580.00, change: 3.10, chartData: generateChartData(3580.00) },
-  ], [generateChartData]);
-
-  const isMarketDataLoading = false;
-  const marketDataError = null;
-  
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#goals') {
-        setActiveTab('goals');
-      } else if (hash === '#advisor') {
-        setActiveTab('advisor');
+  const fetchStockData = async (symbol: string, apiKey: string) => {
+      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${apiKey}`;
+      try {
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data['Global Quote'] && data['Global Quote']['05. price']) {
+              return {
+                  name: symbol,
+                  price: parseFloat(data['Global Quote']['05. price']),
+                  change: parseFloat(data['Global Quote']['10. change percent'].replace('%', '')),
+                  chartData: generateChartData(parseFloat(data['Global Quote']['05. price']))
+              };
+          } else if (data.Note && data.Note.includes('API call frequency')) {
+            console.warn(`Rate limit hit for ${symbol}, skipping...`);
+            return null; // Handle rate limit
+          }
+          return null;
+      } catch (error) {
+          console.error(`Error fetching data for ${symbol}:`, error);
+          return null;
       }
-    };
+  };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
+  const updateData = useCallback(async () => {
+      if (isFetching.current || !investments) return;
+      
+      console.log('Starting market data update...');
+      isFetching.current = true;
+      setIsMarketDataLoading(true);
 
-    if(window.location.hash === '#goals') {
-      setActiveTab('goals');
+      const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+      console.log('API Key configured:', !!apiKey && apiKey !== 'YOUR_API_KEY_HERE');
+
+      if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+          console.error('API key is not configured properly in .env.local file. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY=YOUR_KEY');
+          setMarketDataError('Your Alpha Vantage API key is not configured. Please add it to your .env file to fetch live market data.');
+          setIsMarketDataLoading(false);
+          isFetching.current = false;
+          return;
+      }
+
+      const userSymbols = investments.map(inv => inv.symbol);
+      const allSymbols = [...new Set([...DEFAULT_MARKET_SYMBOLS, ...userSymbols])];
+
+      const newMarketData: MarketStock[] = [];
+      const updatedInvestments = [...investments];
+
+      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+      for (const symbol of allSymbols) {
+          console.log(`Fetching data for: ${symbol}`);
+          const data = await fetchStockData(symbol, apiKey);
+          console.log(`Result for ${symbol}:`, data ? 'Success' : 'Failed');
+
+          if (data) {
+              newMarketData.push(data);
+              const investmentIndex = updatedInvestments.findIndex(inv => inv.symbol === symbol);
+              if (investmentIndex > -1) {
+                  const investment = updatedInvestments[investmentIndex];
+                  const updatedValue = investment.quantity * data.price;
+                  
+                  if (investment.value !== updatedValue) {
+                      updatedInvestments[investmentIndex] = { ...investment, value: updatedValue };
+                      if (authUser && firestore) {
+                          const investmentRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
+                          await updateDoc(investmentRef, { value: updatedValue });
+                      }
+                  }
+              }
+          }
+          await delay(15000); // Increased delay to 15 seconds to avoid rate limiting
+      }
+
+      setMarketData(newMarketData);
+      setIsMarketDataLoading(false);
+      isFetching.current = false;
+      console.log('Market data update finished.');
+      toast({ title: "Market Data Synced", description: "Live prices have been updated." });
+
+  }, [investments, authUser, firestore, toast, generateChartData]);
+
+  useEffect(() => {
+    // More robust condition to trigger the initial fetch
+    if (!investmentsLoading && investments && !initialFetchDone.current && marketData.length === 0) {
+        console.log('Triggering initial market data fetch');
+        initialFetchDone.current = true;
+        updateData();
     }
+  }, [investmentsLoading, investments, marketData.length, updateData]);
 
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
-
-  const topMovers = [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const topMovers = marketData.length > 0 ? [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)) : [];
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
@@ -694,9 +757,5 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
 
     

@@ -79,19 +79,6 @@ const generateChartData = (base: number, points = 12) => {
     return data;
 };
 
-const MOCK_MARKET_DATA: MarketStock[] = [
-    { name: 'RELIANCE', price: 2950.0, change: 1.2, chartData: generateChartData(2950) },
-    { name: 'TCS', price: 3850.0, change: -0.5, chartData: generateChartData(3850) },
-    { name: 'HDFCBANK', price: 1680.0, change: 2.3, chartData: generateChartData(1680) },
-    { name: 'INFY', price: 1550.0, change: -1.1, chartData: generateChartData(1550) },
-    { name: 'ICICIBANK', price: 1100.0, change: 0.8, chartData: generateChartData(1100) },
-    { name: 'SBIN', price: 640.0, change: -0.2, chartData: generateChartData(640) },
-    { name: 'BHARTIARTL', price: 1200.0, change: 1.5, chartData: generateChartData(1200) },
-    { name: 'L&T', price: 3600.0, change: -0.9, chartData: generateChartData(3600) },
-    { name: 'HINDUNILVR', price: 2500.0, change: 0.3, chartData: generateChartData(2500) },
-    { name: 'ITC', price: 430.0, change: 0.1, chartData: generateChartData(430) },
-];
-
 export default function Home() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -103,9 +90,11 @@ export default function Home() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { budgets, isLoading: budgetsLoading } = useBudgets();
   
-  const [marketData, setMarketData] = useState<MarketStock[]>(MOCK_MARKET_DATA);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
+  const [marketData, setMarketData] = useState<MarketStock[]>([]);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
+  const initialFetchDone = useRef(false);
+
 
   const portfolioValue = usePortfolioValue(investments, marketData);
   const totalIncome = useTotalIncome(transactions);
@@ -127,13 +116,13 @@ export default function Home() {
         const data = await response.json();
 
         if (data.Note && data.Note.includes('API call frequency')) {
-            console.warn(`Rate limit hit for ${symbol}, skipping...`);
             toast({
                 variant: 'destructive',
-                title: 'API Rate Limit',
-                description: `Rate limit hit for ${symbol}. Please wait before refreshing.`,
+                title: 'API Rate Limit Hit',
+                description: `Slowing down requests for ${symbol}. Please wait.`,
             });
-            return null;
+            await delay(15000); // Wait longer if rate limit is hit
+            return await fetchStockData(symbol, apiKey); // Retry the fetch
         }
 
         const quote = data['Global Quote'];
@@ -152,9 +141,6 @@ export default function Home() {
   };
   
   const updateData = useCallback(async () => {
-    if (isMarketDataLoading) return;
-
-    setMarketData([]); // Clear previous data to show skeletons
     setIsMarketDataLoading(true);
     setMarketDataError(null);
 
@@ -165,7 +151,7 @@ export default function Home() {
         return;
     }
 
-    const allSymbols = [...new Set(investments?.map(i => i.symbol).concat(MOCK_MARKET_DATA.map(m => m.name)))];
+    const allSymbols = [...new Set(investments?.map(i => i.symbol).concat(['RELIANCE', 'TCS', 'HDFCBANK', 'INFY']))];
     const newMarketData: MarketStock[] = [];
 
     for (const symbol of allSymbols) {
@@ -178,46 +164,25 @@ export default function Home() {
                 chartData: generateChartData(stockData.price),
             });
         }
-        await delay(15000); // 15-second delay
-    }
-
-    if (newMarketData.length > 0) {
-      setMarketData(newMarketData);
-
-      if (firestore && authUser && investments) {
-          const batch = writeBatch(firestore);
-          
-          investments.forEach(investment => {
-              const updatedStock = newMarketData.find(s => s.name === investment.symbol);
-              if (updatedStock) {
-                  const docRef = doc(firestore, 'users', authUser.uid, 'investments', investment.id);
-                  const newPrice = updatedStock.price;
-                  const newValue = investment.quantity * newPrice;
-                  batch.update(docRef, { price: newPrice, value: newValue });
-              }
-          });
-          
-          try {
-              await batch.commit();
-              toast({
-                  title: 'Portfolio Updated',
-                  description: 'Your portfolio values have been updated with the latest market prices.',
-              });
-          } catch (e) {
-              console.error("Error batch updating portfolio:", e);
-              toast({
-                  variant: "destructive",
-                  title: "Portfolio Update Failed",
-                  description: "Could not update your portfolio values in the database."
-              });
-          }
-      }
-    } else {
-      setMarketDataError("Failed to fetch any market data. Please check your API key and network connection.");
+        await delay(15000);
     }
     
+    setMarketData(newMarketData);
     setIsMarketDataLoading(false);
-  }, [investments, authUser, firestore, toast, isMarketDataLoading]);
+
+    if (newMarketData.length === 0) {
+        setMarketDataError("Failed to fetch market data. The API might be temporarily unavailable or your key is invalid.");
+    }
+
+  }, [investments, toast]);
+
+
+  useEffect(() => {
+    if (investments && !investmentsLoading && !initialFetchDone.current) {
+        initialFetchDone.current = true;
+        updateData();
+    }
+  }, [investments, investmentsLoading, updateData]);
 
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
@@ -789,6 +754,8 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
 

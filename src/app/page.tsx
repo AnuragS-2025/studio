@@ -98,9 +98,9 @@ export default function Home() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { budgets, isLoading: budgetsLoading } = useBudgets();
   
-  const [marketData, setMarketData] = useState<MarketStock[]>(MOCK_MARKET_DATA);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
-  const [marketDataError, setMarketDataError] = useState<string | null>(null);
+  const marketData: MarketStock[] = MOCK_MARKET_DATA;
+  const isMarketDataLoading = false;
+  const marketDataError = null;
 
   const portfolioValue = usePortfolioValue(investments, marketData);
   const totalIncome = useTotalIncome(transactions);
@@ -111,94 +111,6 @@ export default function Home() {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   
-  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-  const fetchStockData = async (symbol: string, apiKey: string) => {
-    try {
-        const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${apiKey}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data for ${symbol}`);
-        }
-        const data = await response.json();
-
-        if (data.Note && data.Note.includes('API call frequency')) {
-            toast({
-                variant: 'destructive',
-                title: 'API Rate Limit Hit',
-                description: `Slowing down requests for ${symbol}. Please wait.`,
-            });
-            await delay(15000); // Wait longer if rate limit is hit
-            return await fetchStockData(symbol, apiKey); // Retry the fetch
-        }
-
-        const quote = data['Global Quote'];
-        if (!quote || Object.keys(quote).length === 0) {
-            console.warn(`No data found for symbol: ${symbol}`);
-            return null;
-        }
-        return {
-            price: parseFloat(quote['05. price']),
-            change: parseFloat(quote['10. change percent'].replace('%', '')),
-        };
-    } catch (error) {
-        console.error(`Error fetching data for ${symbol}:`, error);
-        return null;
-    }
-  };
-  
-   const updateData = useCallback(async () => {
-    if (!investments || investments.length === 0) {
-      toast({
-        title: "No Investments",
-        description: "Your portfolio is empty. Add investments to fetch market data.",
-      });
-      return;
-    }
-
-    setIsMarketDataLoading(true);
-    setMarketDataError(null);
-
-    // This is a placeholder. In a real app, you would not expose the key on the client.
-    // It would be handled via a server-side action or a secure cloud function.
-    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-    
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-        setMarketDataError('Alpha Vantage API key is not set. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
-        setIsMarketDataLoading(false);
-        return;
-    }
-
-    const newMarketData: MarketStock[] = [];
-
-    for (const investment of investments) {
-      if (investment.type === 'stock') {
-        const data = await fetchStockData(investment.symbol, apiKey);
-        if (data) {
-          newMarketData.push({
-            name: investment.symbol,
-            price: data.price,
-            change: data.change,
-            chartData: generateChartData(data.price),
-          });
-        }
-        await delay(15000); // Wait 15 seconds between API calls to respect rate limit
-      }
-    }
-
-    if (newMarketData.length > 0) {
-        setMarketData(newMarketData);
-        toast({
-            title: "Market Data Refreshed",
-            description: "The latest stock prices have been updated.",
-        });
-    } else {
-        setMarketDataError("Could not fetch any new market data. Please check your API key and network connection.");
-    }
-    
-    setIsMarketDataLoading(false);
-
-  }, [investments, toast]);
-
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
     [marketData]
@@ -404,7 +316,7 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <Button variant="outline" size="sm" onClick={updateData} disabled={isMarketDataLoading}>
+                   <Button variant="outline" size="sm" disabled={isMarketDataLoading}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     <span className="ml-2 hidden sm:inline">Refresh Data</span>
                   </Button>

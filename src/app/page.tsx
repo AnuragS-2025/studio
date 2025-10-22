@@ -98,11 +98,9 @@ export default function Home() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { budgets, isLoading: budgetsLoading } = useBudgets();
   
+  const [marketData, setMarketData] = useState<MarketStock[]>(MOCK_MARKET_DATA);
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
-
-  // Use mock data directly
-  const marketData = MOCK_MARKET_DATA;
 
   const portfolioValue = usePortfolioValue(investments, marketData);
   const totalIncome = useTotalIncome(transactions);
@@ -148,20 +146,58 @@ export default function Home() {
     }
   };
   
-  const updateData = useCallback(async () => {
-    // This function will be called on refresh, but for now it's not implemented
-    // to prevent build issues. We can re-add this logic carefully later.
-    console.log("Refresh clicked. Data fetching is currently disabled.");
-    // Placeholder for refresh logic
-    setIsMarketDataLoading(true);
-    await delay(2000); // Simulate network delay
-    setIsMarketDataLoading(false);
-    toast({
-        title: "Data Refreshed",
-        description: "Market data has been updated (simulation).",
-    });
+   const updateData = useCallback(async () => {
+    if (!investments || investments.length === 0) {
+      toast({
+        title: "No Investments",
+        description: "Your portfolio is empty. Add investments to fetch market data.",
+      });
+      return;
+    }
 
-  }, [toast]);
+    setIsMarketDataLoading(true);
+    setMarketDataError(null);
+
+    // This is a placeholder. In a real app, you would not expose the key on the client.
+    // It would be handled via a server-side action or a secure cloud function.
+    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
+    
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+        setMarketDataError('Alpha Vantage API key is not set. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
+        setIsMarketDataLoading(false);
+        return;
+    }
+
+    const newMarketData: MarketStock[] = [];
+
+    for (const investment of investments) {
+      if (investment.type === 'stock') {
+        const data = await fetchStockData(investment.symbol, apiKey);
+        if (data) {
+          newMarketData.push({
+            name: investment.symbol,
+            price: data.price,
+            change: data.change,
+            chartData: generateChartData(data.price),
+          });
+        }
+        await delay(15000); // Wait 15 seconds between API calls to respect rate limit
+      }
+    }
+
+    if (newMarketData.length > 0) {
+        setMarketData(newMarketData);
+        toast({
+            title: "Market Data Refreshed",
+            description: "The latest stock prices have been updated.",
+        });
+    } else {
+        setMarketDataError("Could not fetch any new market data. Please check your API key and network connection.");
+    }
+    
+    setIsMarketDataLoading(false);
+
+  }, [investments, toast]);
 
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
@@ -733,3 +769,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

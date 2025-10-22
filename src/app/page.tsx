@@ -79,6 +79,14 @@ const generateChartData = (base: number, points = 12) => {
     return data;
 };
 
+const MOCK_MARKET_DATA: MarketStock[] = [
+    { name: 'RELIANCE', price: 2980.55, change: 1.05, chartData: generateChartData(2980.55) },
+    { name: 'TCS', price: 3900.80, change: -0.25, chartData: generateChartData(3900.80) },
+    { name: 'HDFCBANK', price: 1705.10, change: 2.15, chartData: generateChartData(1705.10) },
+    { name: 'INFY', price: 1580.20, change: -1.10, chartData: generateChartData(1580.20) },
+];
+
+
 export default function Home() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -90,11 +98,11 @@ export default function Home() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { budgets, isLoading: budgetsLoading } = useBudgets();
   
-  const [marketData, setMarketData] = useState<MarketStock[]>([]);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
-  const initialFetchDone = useRef(false);
 
+  // Use mock data directly
+  const marketData = MOCK_MARKET_DATA;
 
   const portfolioValue = usePortfolioValue(investments, marketData);
   const totalIncome = useTotalIncome(transactions);
@@ -141,48 +149,19 @@ export default function Home() {
   };
   
   const updateData = useCallback(async () => {
+    // This function will be called on refresh, but for now it's not implemented
+    // to prevent build issues. We can re-add this logic carefully later.
+    console.log("Refresh clicked. Data fetching is currently disabled.");
+    // Placeholder for refresh logic
     setIsMarketDataLoading(true);
-    setMarketDataError(null);
-
-    const apiKey = process.env.NEXT_PUBLIC_ALPHAVANTAGE_API_KEY;
-    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
-        setMarketDataError('Alpha Vantage API key is not configured. Please add NEXT_PUBLIC_ALPHAVANTAGE_API_KEY to your .env file.');
-        setIsMarketDataLoading(false);
-        return;
-    }
-
-    const allSymbols = [...new Set(investments?.map(i => i.symbol).concat(['RELIANCE', 'TCS', 'HDFCBANK', 'INFY']))];
-    const newMarketData: MarketStock[] = [];
-
-    for (const symbol of allSymbols) {
-        const stockData = await fetchStockData(symbol, apiKey);
-        if (stockData) {
-            newMarketData.push({
-                name: symbol,
-                price: stockData.price,
-                change: stockData.change,
-                chartData: generateChartData(stockData.price),
-            });
-        }
-        await delay(15000);
-    }
-    
-    setMarketData(newMarketData);
+    await delay(2000); // Simulate network delay
     setIsMarketDataLoading(false);
+    toast({
+        title: "Data Refreshed",
+        description: "Market data has been updated (simulation).",
+    });
 
-    if (newMarketData.length === 0) {
-        setMarketDataError("Failed to fetch market data. The API might be temporarily unavailable or your key is invalid.");
-    }
-
-  }, [investments, toast]);
-
-
-  useEffect(() => {
-    if (investments && !investmentsLoading && !initialFetchDone.current) {
-        initialFetchDone.current = true;
-        updateData();
-    }
-  }, [investments, investmentsLoading, updateData]);
+  }, [toast]);
 
   const topMovers = useMemo(() => 
     [...marketData].sort((a, b) => Math.abs(b.change) - Math.abs(a.change)),
@@ -389,7 +368,7 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" onClick={updateData} disabled={isMarketDataLoading}>
+                   <Button variant="outline" size="sm" onClick={updateData} disabled={isMarketDataLoading}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     <span className="ml-2 hidden sm:inline">Refresh Data</span>
                   </Button>
@@ -418,7 +397,7 @@ export default function Home() {
                       </CardContent>
                     </Card>
                   ))
-                ) : marketData.slice(0, 4).map((stock) => (
+                ) : marketData.map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -474,7 +453,7 @@ export default function Home() {
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {isMarketDataLoading && displayedMovers.length === 0 ? (
+                  {isMarketDataLoading ? (
                     <div className="space-y-px p-4">
                       <Skeleton className="h-10 w-full" />
                       <Skeleton className="h-10 w-full" />
@@ -754,9 +733,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
-
-    

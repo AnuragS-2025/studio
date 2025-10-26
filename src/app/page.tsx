@@ -144,68 +144,124 @@ export default function Home() {
   });
 
   const updateData = useCallback(async () => {
-    setIsMarketDataLoading(true);
-    setMarketDataError(null);
+  setIsMarketDataLoading(true);
+  setMarketDataError(null);
 
-    try {
-        const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC", "HINDUNILVR", "LT", "TATAMOTORS", "ADANIENT", "MARUTI"];
-        const fetchedData = await fetchMarketData(symbols);
+  try {
+    const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC", "HINDUNILVR", "LT", "TATAMOTORS", "ADANIENT", "MARUTI"];
+    const fetched = await fetchMarketData(symbols);
 
-        // If fetchMarketData returns a non-array, treat as failure
-        if (!Array.isArray(fetchedData)) {
-        throw new Error("Unexpected response shape from fetchMarketData");
+    // Debug: help inspect what shape the API returned (useful during development)
+    // eslint-disable-next-line no-console
+    console.debug("fetchMarketData response type:", Array.isArray(fetched) ? "array" : typeof fetched, fetched);
+
+    // Normalize fetched into a symbol -> item map (case-insensitive)
+    const fetchedMap = new Map<string, any>();
+
+    if (Array.isArray(fetched)) {
+      fetched.forEach((item: any) => {
+        if (!item) return;
+        // try many likely symbol fields
+        const candidateKeys = [
+          item.symbol,
+          item.ticker,
+          item.code,
+          item.s,
+          item.symbolName,
+          item.t,
+          item.tickerSymbol,
+          item.name
+        ].filter(Boolean);
+
+        // prefer explicit symbol-like fields, otherwise try to infer from name
+        let key = candidateKeys.length ? String(candidateKeys[0]) : "";
+        key = key.toUpperCase();
+
+        if (key) {
+          fetchedMap.set(key, item);
+        } else if (typeof item.name === "string") {
+          // If name contains a known symbol (rare), attempt to match
+          const nameUpper = item.name.toUpperCase();
+          for (const sym of symbols) {
+            if (nameUpper.includes(sym)) {
+              fetchedMap.set(sym, item);
+              break;
+            }
+          }
         }
-
-        // Build a lookup from fetched results. Normalize keys to uppercase symbol/name.
-        const fetchedMap = new Map<string, any>();
-        fetchedData.forEach((item: any) => {
-        // Try to find a symbol/name field on returned item
-        const key = (item.symbol || item.name || "").toString().toUpperCase();
-        if (key) fetchedMap.set(key, item);
-        });
-
-        // Build final marketData preserving requested order and filling missing entries with mock data
-        const normalized: MarketStock[] = symbols.map((sym, idx) => {
-        const upper = sym.toUpperCase();
-        const src = fetchedMap.get(upper);
-
-        if (src) {
-            // Normalize shape
-            const price = typeof src.price === "number" ? src.price : Number(src.price) || (MOCK_MARKET_DATA[idx]?.price ?? 0);
-            const change = typeof src.change === "number" ? src.change : Number(src.change) || (MOCK_MARKET_DATA[idx]?.change ?? 0);
-            const chartData = Array.isArray(src.chartData) && src.chartData.length
-            ? src.chartData
-            : generateChartData(price || (MOCK_MARKET_DATA[idx]?.price ?? 1000));
-            return {
-            name: src.name ?? sym,
-            price,
-            change,
-            chartData,
-            };
-        }
-
-        // If missing from API, fallback to mock (prefer matching mock by name) or generate
-        const mock = MOCK_MARKET_DATA.find(m => m.name.toUpperCase() === upper);
-        if (mock) return { ...mock };
-        const fallbackPrice = MOCK_MARKET_DATA[idx]?.price ?? 1000;
-        return {
-            name: sym,
-            price: fallbackPrice,
-            change: 0,
-            chartData: generateChartData(fallbackPrice),
-        };
-        });
-
-        setMarketData(normalized);
-    } catch (error: any) {
-        console.error("Market update failed:", error);
-        setMarketDataError("Failed to fetch live market data. Showing mock data.");
-        // Keep the existing list in place if it's already populated; otherwise fallback to mock list
-        setMarketData(prev => (prev && prev.length === 10 ? prev : MOCK_MARKET_DATA));
-    } finally {
-        setIsMarketDataLoading(false);
+      });
+    } else if (fetched && typeof fetched === "object") {
+      // If API returned an object map, copy keys (e.g. { RELIANCE: {...}, tcs: {...} })
+      Object.keys(fetched).forEach((k) => {
+        const key = String(k).toUpperCase();
+        fetchedMap.set(key, (fetched as any)[k]);
+      });
+    } else {
+      // Unexpected shape
+      throw new Error("Unexpected response shape from fetchMarketData");
     }
-    }, []);
+
+    // Build final normalized list in requested order
+    const normalized: MarketStock[] = symbols.map((sym, idx) => {
+      const upper = sym.toUpperCase();
+      const src = fetchedMap.get(upper);
+
+      if (src) {
+        const price = typeof src.price === "number" ? src.price :
+                      (typeof src.lastPrice === "number" ? src.lastPrice :
+                        Number(src.price ?? src.lastPrice ?? src.last ?? src.close) || (MOCK_MARKET_DATA[idx]?.price ?? 0));
+        const change = typeof src.change === "number" ? src.change :
+                       Number(src.change ?? src.percentChange ?? src.pChange ?? src.diff) || (MOCK_MARKET_DATA[idx]?.change ?? 0);
+
+        const chartData =
+          Array.isArray(src.chartData) && src.chartData.length
+            ? src.chartData
+            : // some APIs return intraday arrays under 'candles' or 'prices'
+            (Array.isArray(src.prices) && src.prices.length ? src.prices.map((v: any) => ({ value: Number(v) })) :
+             (Array.isArray(src.candles) && src.candles.length ? src.candles.map((c: any) => ({ value: Number(Array.isArray(c) ? c[4] : c.close) })) :
+              generateChartData(price || (MOCK_MARKET_DATA[idx]?.price ?? 1000))));
+
+        return {
+          name: (src.symbol || src.ticker || src.name || sym).toString(),
+          price,
+          change,
+          chartData,
+        };
+      }
+
+      // fallback: try to find a mock by name, else generate a minimal entry
+      const mock = MOCK_MARKET_DATA.find(m => m.name.toUpperCase() === upper);
+      if (mock) return { ...mock };
+      const fallbackPrice = MOCK_MARKET_DATA[idx]?.price ?? 1000;
+      return {
+        name: sym,
+        price: fallbackPrice,
+        change: 0,
+        chartData: generateChartData(fallbackPrice),
+      };
+    });
+
+    // Write normalized results
+    setMarketData(normalized);
+
+    // If no real items were found at all, show a non-blocking error so you know something's off
+    const liveCount = normalized.filter((m, i) => {
+      // consider it "live" if it differs from the mock by price or change
+      const mock = MOCK_MARKET_DATA[i];
+      return !mock || m.price !== mock.price || m.change !== mock.change;
+    }).length;
+    if (liveCount === 0) {
+      setMarketDataError("API returned no live items for the requested symbols — showing fallback mock data.");
+    }
+  } catch (err: any) {
+    // eslint-disable-next-line no-console
+    console.error("Market update failed:", err);
+    setMarketDataError("Failed to fetch live market data. Showing mock data.");
+    setMarketData(prev => (prev && prev.length === 10 ? prev : MOCK_MARKET_DATA));
+  } finally {
+    setIsMarketDataLoading(false);
+  }
+}, []);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -773,3 +829,6 @@ export default function Home() {
 
     
 
+
+
+    

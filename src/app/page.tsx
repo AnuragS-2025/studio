@@ -115,6 +115,7 @@ export default function Home() {
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
   const [showAllMovers, setShowAllMovers] = useState(false);
+  const [showAllGraphs, setShowAllGraphs] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   
@@ -124,6 +125,7 @@ export default function Home() {
   );
   
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
+  const displayedGraphs = showAllGraphs ? marketData : marketData.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
   const expenseChartConfig = {
@@ -345,9 +347,15 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
-                    {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  </Button>
+                   <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllGraphs(!showAllGraphs)}>
+                            <span>{showAllGraphs ? "Show Less" : "Show More"}</span>
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", showAllGraphs && "rotate-180")} />
+                        </Button>
+                        <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
+                          {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        </Button>
+                   </div>
                 </CardHeader>
                 {marketDataError && (
                   <CardContent>
@@ -361,7 +369,7 @@ export default function Home() {
             </Card>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {isMarketDataLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
+                  Array.from({ length: showAllGraphs ? 10 : 4 }).map((_, i) => (
                     <Card key={i}>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <Skeleton className="h-4 w-20" />
@@ -373,7 +381,7 @@ export default function Home() {
                       </CardContent>
                     </Card>
                   ))
-                ) : marketData.map((stock) => (
+                ) : displayedGraphs.map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -718,3 +726,5 @@ export default function Home() {
   );
 
 }
+
+    

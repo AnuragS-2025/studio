@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -57,7 +58,6 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { fetchMarketData } from "@/lib/fetchMarketData";
 
 
 interface MarketStock {
@@ -67,17 +67,23 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
+const generateChartData = (base: number, points = 12) => {
+    const data = [];
+    let currentValue = base;
+    for (let i = 0; i < points; i++) {
+        const volatility = (Math.random() - 0.5) * 2; // -1 to 1
+        currentValue += volatility * (base * 0.05); // 5% volatility
+        if (currentValue <= 0) currentValue = base * 0.1; // Prevent zero or negative prices
+        data.push({ value: Math.round(currentValue * 100) / 100 });
+    }
+    return data;
+};
+
 const MOCK_MARKET_DATA: MarketStock[] = [
-    { name: 'RELIANCE', price: 2980.55, change: 1.05, chartData: [] },
-    { name: 'TCS', price: 3900.80, change: -0.25, chartData: [] },
-    { name: 'HDFCBANK', price: 1705.10, change: 2.15, chartData: [] },
-    { name: 'INFY', price: 1580.20, change: -1.10, chartData: [] },
-    { name: 'ITC', price: 433.50, change: 0.85, chartData: [] },
-    { name: 'HINDUNILVR', price: 2550.70, change: -0.15, chartData: [] },
-    { name: 'LT', price: 3610.00, change: 1.50, chartData: [] },
-    { name: 'TATAMOTORS', price: 975.00, change: 1.75, chartData: [] },
-    { name: 'ADANIENT', price: 3250.00, change: -2.75, chartData: [] },
-    { name: 'MARUTI', price: 12800.45, change: 0.95, chartData: [] },
+    { name: 'RELIANCE', price: 2980.55, change: 1.05, chartData: generateChartData(2980.55) },
+    { name: 'TCS', price: 3900.80, change: -0.25, chartData: generateChartData(3900.80) },
+    { name: 'HDFCBANK', price: 1705.10, change: 2.15, chartData: generateChartData(1705.10) },
+    { name: 'INFY', price: 1580.20, change: -1.10, chartData: generateChartData(1580.20) },
 ];
 
 
@@ -102,7 +108,6 @@ export default function Home() {
   const expenseByCategory = useExpenseByCategoryData(transactions);
 
   const [showAllMovers, setShowAllMovers] = useState(false);
-  const [showAllGraphs, setShowAllGraphs] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState('advisor');
   
@@ -112,7 +117,6 @@ export default function Home() {
   );
   
   const displayedMovers = showAllMovers ? topMovers : topMovers.slice(0, 4);
-  const displayedGraphs = showAllGraphs ? marketData : marketData.slice(0, 4);
   const displayedTransactions = showAllTransactions ? transactions : recentTransactions;
 
   const expenseChartConfig = {
@@ -133,17 +137,23 @@ export default function Home() {
   const updateData = useCallback(async () => {
     setIsMarketDataLoading(true);
     setMarketDataError(null);
-
-    try {
-      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
-      const fetchedData = await fetchMarketData(symbols);
-      setMarketData(fetchedData);
-    } catch (error) {
-      setMarketDataError("Failed to fetch live market data.");
-    } finally {
-      setIsMarketDataLoading(false);
-    }
-  }, []);
+  
+    // This is where you would fetch data from a real API
+    // For now, we'll simulate a fetch with a delay.
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  
+    // In a real app, you'd check for API key and handle errors
+    // For this example, we'll just regenerate mock data to simulate an update
+    const newMarketData = [
+        { name: 'RELIANCE', price: 2980.55 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(2980.55) },
+        { name: 'TCS', price: 3900.80 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(3900.80) },
+        { name: 'HDFCBANK', price: 1705.10 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1705.10) },
+        { name: 'INFY', price: 1580.20 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1580.20) },
+    ];
+  
+    setMarketData(newMarketData);
+    setIsMarketDataLoading(false);
+  }, [investments, toast]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -327,15 +337,9 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllGraphs(!showAllGraphs)}>
-                            <span>{showAllGraphs ? "Show Less" : "Show More"}</span>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform", showAllGraphs && "rotate-180")} />
-                        </Button>
-                        <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
-                          {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        </Button>
-                   </div>
+                   <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                    {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  </Button>
                 </CardHeader>
                 {marketDataError && (
                   <CardContent>
@@ -349,7 +353,7 @@ export default function Home() {
             </Card>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {isMarketDataLoading ? (
-                  Array.from({ length: showAllGraphs ? 10 : 4 }).map((_, i) => (
+                  Array.from({ length: 4 }).map((_, i) => (
                     <Card key={i}>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <Skeleton className="h-4 w-20" />
@@ -361,7 +365,7 @@ export default function Home() {
                       </CardContent>
                     </Card>
                   ))
-                ) : displayedGraphs.map((stock) => (
+                ) : marketData.map((stock) => (
                 <Card key={stock.name}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">{stock.name}</CardTitle>
@@ -416,7 +420,7 @@ export default function Home() {
                             <span>{showAllMovers ? "Show Less" : "Show More"}</span>
                             <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
                         </Button>
-                         <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
+                         <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
                             {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -470,7 +474,7 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
+              <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
                 {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
               <AddInvestmentForm />
@@ -706,3 +710,5 @@ export default function Home() {
   );
 
 }
+
+    

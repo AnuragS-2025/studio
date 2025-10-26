@@ -98,9 +98,9 @@ export default function Home() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { budgets, isLoading: budgetsLoading } = useBudgets();
   
-  const marketData: MarketStock[] = MOCK_MARKET_DATA;
-  const isMarketDataLoading = false;
-  const marketDataError = null;
+  const [marketData, setMarketData] = useState<MarketStock[]>(MOCK_MARKET_DATA);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
   const portfolioValue = usePortfolioValue(investments, marketData);
   const totalIncome = useTotalIncome(transactions);
@@ -135,7 +135,24 @@ export default function Home() {
   });
 
   const updateData = useCallback(async () => {
+    setIsMarketDataLoading(true);
+    setMarketDataError(null);
   
+    // This is where you would fetch data from a real API
+    // For now, we'll simulate a fetch with a delay.
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  
+    // In a real app, you'd check for API key and handle errors
+    // For this example, we'll just regenerate mock data to simulate an update
+    const newMarketData = [
+        { name: 'RELIANCE', price: 2980.55 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(2980.55) },
+        { name: 'TCS', price: 3900.80 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(3900.80) },
+        { name: 'HDFCBANK', price: 1705.10 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1705.10) },
+        { name: 'INFY', price: 1580.20 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1580.20) },
+    ];
+  
+    setMarketData(newMarketData);
+    setIsMarketDataLoading(false);
   }, [investments, toast]);
 
   return (
@@ -320,7 +337,7 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <Button variant="outline" size="sm" disabled={isMarketDataLoading}>
+                   <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   </Button>
                 </CardHeader>
@@ -398,10 +415,15 @@ export default function Home() {
                         <CardTitle>Top Movers</CardTitle>
                         <CardDescription>Assets with the most significant price changes today.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllMovers(!showAllMovers)}>
-                        <span>{showAllMovers ? "Show Less" : "Show More"}</span>
-                        <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAllMovers(!showAllMovers)}>
+                            <span>{showAllMovers ? "Show Less" : "Show More"}</span>
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
+                        </Button>
+                         <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                            {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   {isMarketDataLoading ? (
@@ -452,6 +474,9 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
               <AddInvestmentForm />
             </div>
           </div>

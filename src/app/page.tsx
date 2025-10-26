@@ -58,6 +58,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchMarketData } from "@/lib/fetchMarketData";
 
 
 interface MarketStock {
@@ -137,23 +138,23 @@ export default function Home() {
   const updateData = useCallback(async () => {
     setIsMarketDataLoading(true);
     setMarketDataError(null);
-  
-    // This is where you would fetch data from a real API
-    // For now, we'll simulate a fetch with a delay.
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  
-    // In a real app, you'd check for API key and handle errors
-    // For this example, we'll just regenerate mock data to simulate an update
-    const newMarketData = [
-        { name: 'RELIANCE', price: 2980.55 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(2980.55) },
-        { name: 'TCS', price: 3900.80 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(3900.80) },
-        { name: 'HDFCBANK', price: 1705.10 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1705.10) },
-        { name: 'INFY', price: 1580.20 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1580.20) },
-    ];
-  
-    setMarketData(newMarketData);
-    setIsMarketDataLoading(false);
-  }, [investments, toast]);
+
+    try {
+      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
+      const fetchedData = await fetchMarketData(symbols);
+      if (fetchedData.length > 0) {
+        setMarketData(fetchedData);
+      } else {
+        setMarketDataError("Failed to fetch live market data. The API may be unavailable or the symbols are invalid.");
+        setMarketData(MOCK_MARKET_DATA); // Revert to mock data on failure
+      }
+    } catch (error) {
+      setMarketDataError("Failed to fetch live market data.");
+      setMarketData(MOCK_MARKET_DATA); // Revert to mock data on failure
+    } finally {
+      setIsMarketDataLoading(false);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full flex-col">

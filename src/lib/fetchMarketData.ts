@@ -41,3 +41,5 @@ export async function fetchMarketData(symbols: string[]) {
 
   return results;
 }
+
+    

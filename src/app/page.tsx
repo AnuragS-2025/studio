@@ -136,38 +136,26 @@ export default function Home() {
   });
 
   const updateData = useCallback(async () => {
-    if (!investments) return;
     setIsMarketDataLoading(true);
     setMarketDataError(null);
 
     try {
-      // Get unique stock symbols from the user's portfolio
-      const symbols = Array.from(new Set(investments
-        .filter(inv => inv.type === 'stock')
-        .map(inv => inv.symbol)
-      ));
-      
-      if (symbols.length === 0) {
-        setMarketData([]);
-        return;
-      }
-
+      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
       const fetchedData = await fetchMarketData(symbols);
+      
       if (fetchedData.length > 0) {
         setMarketData(fetchedData);
       } else {
         setMarketDataError("Could not fetch live market data. The API may be unavailable or symbols are invalid.");
-        // Revert to mock data related to user's portfolio on failure, or clear it
-        const userSymbols = MOCK_MARKET_DATA.filter(mock => symbols.includes(mock.name));
-        setMarketData(userSymbols);
+        setMarketData(MOCK_MARKET_DATA);
       }
     } catch (error) {
       setMarketDataError("Failed to fetch live market data due to a network or unexpected error.");
-      setMarketData(MOCK_MARKET_DATA); // Revert to all mock data on critical failure
+      setMarketData(MOCK_MARKET_DATA);
     } finally {
       setIsMarketDataLoading(false);
     }
-  }, [investments]);
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full flex-col">

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -58,6 +57,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchMarketData } from "@/lib/fetchMarketData";
 
 
 interface MarketStock {
@@ -137,23 +137,24 @@ export default function Home() {
   const updateData = useCallback(async () => {
     setIsMarketDataLoading(true);
     setMarketDataError(null);
-  
-    // This is where you would fetch data from a real API
-    // For now, we'll simulate a fetch with a delay.
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  
-    // In a real app, you'd check for API key and handle errors
-    // For this example, we'll just regenerate mock data to simulate an update
-    const newMarketData = [
-        { name: 'RELIANCE', price: 2980.55 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(2980.55) },
-        { name: 'TCS', price: 3900.80 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(3900.80) },
-        { name: 'HDFCBANK', price: 1705.10 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1705.10) },
-        { name: 'INFY', price: 1580.20 + (Math.random() * 100 - 50), change: (Math.random() * 4 - 2), chartData: generateChartData(1580.20) },
-    ];
-  
-    setMarketData(newMarketData);
-    setIsMarketDataLoading(false);
-  }, [investments, toast]);
+
+    try {
+      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
+      const fetchedData = await fetchMarketData(symbols);
+      
+      if (fetchedData.length > 0) {
+        setMarketData(fetchedData);
+      } else {
+        setMarketDataError("Could not fetch live market data. The API may be unavailable or symbols are invalid.");
+        setMarketData(MOCK_MARKET_DATA);
+      }
+    } catch (error) {
+      setMarketDataError("Failed to fetch live market data due to a network or unexpected error.");
+      setMarketData(MOCK_MARKET_DATA);
+    } finally {
+      setIsMarketDataLoading(false);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -337,7 +338,7 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                   <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   </Button>
                 </CardHeader>
@@ -420,7 +421,7 @@ export default function Home() {
                             <span>{showAllMovers ? "Show Less" : "Show More"}</span>
                             <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
                         </Button>
-                         <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                         <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                             {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -474,7 +475,7 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+              <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                 {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
               <AddInvestmentForm />
@@ -710,5 +711,3 @@ export default function Home() {
   );
 
 }
-
-    

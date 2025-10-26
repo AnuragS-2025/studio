@@ -1,15 +1,4 @@
 
-// simple mock chart until you fetch intraday data
-function generateMockChart(base: number, points = 12) {
-  const data = [];
-  let current = base;
-  for (let i = 0; i < points; i++) {
-    current += (Math.random() - 0.5) * (base * 0.02);
-    data.push({ value: Math.round(current * 100) / 100 });
-  }
-  return data;
-}
-
 export async function fetchMarketData(symbols: string[]) {
   const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY;
   const results = [];
@@ -38,3 +27,13 @@ export async function fetchMarketData(symbols: string[]) {
 
   return results;
 }
+
+// simple mock chart until you fetch intraday data
+function generateMockChart(base: number, points = 12) {
+  const data = [];
+  let current = base;
+  for (let i = 0; i < points; i++) {
+    current += (Math.random() - 0.5) * (base * 0.02);
+    data.push({ value: Math.round(current * 100) / 100 });
+  }
+  

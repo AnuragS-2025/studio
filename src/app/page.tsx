@@ -136,25 +136,38 @@ export default function Home() {
   });
 
   const updateData = useCallback(async () => {
+    if (!investments) return;
     setIsMarketDataLoading(true);
     setMarketDataError(null);
 
     try {
-      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
+      // Get unique stock symbols from the user's portfolio
+      const symbols = Array.from(new Set(investments
+        .filter(inv => inv.type === 'stock')
+        .map(inv => inv.symbol)
+      ));
+      
+      if (symbols.length === 0) {
+        setMarketData([]);
+        return;
+      }
+
       const fetchedData = await fetchMarketData(symbols);
       if (fetchedData.length > 0) {
         setMarketData(fetchedData);
       } else {
-        setMarketDataError("Failed to fetch live market data. The API may be unavailable or the symbols are invalid.");
-        setMarketData(MOCK_MARKET_DATA); // Revert to mock data on failure
+        setMarketDataError("Could not fetch live market data. The API may be unavailable or symbols are invalid.");
+        // Revert to mock data related to user's portfolio on failure, or clear it
+        const userSymbols = MOCK_MARKET_DATA.filter(mock => symbols.includes(mock.name));
+        setMarketData(userSymbols);
       }
     } catch (error) {
-      setMarketDataError("Failed to fetch live market data.");
-      setMarketData(MOCK_MARKET_DATA); // Revert to mock data on failure
+      setMarketDataError("Failed to fetch live market data due to a network or unexpected error.");
+      setMarketData(MOCK_MARKET_DATA); // Revert to all mock data on critical failure
     } finally {
       setIsMarketDataLoading(false);
     }
-  }, []);
+  }, [investments]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -338,7 +351,7 @@ export default function Home() {
                         Real-time stock market trends and insightful analysis.
                     </CardDescription>
                   </div>
-                   <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                   <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   </Button>
                 </CardHeader>
@@ -421,7 +434,7 @@ export default function Home() {
                             <span>{showAllMovers ? "Show Less" : "Show More"}</span>
                             <ChevronDown className={cn("h-4 w-4 transition-transform", showAllMovers && "rotate-180")} />
                         </Button>
-                         <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+                         <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                             {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         </Button>
                     </div>
@@ -475,7 +488,7 @@ export default function Home() {
                 </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={isMarketDataLoading} onClick={updateData}>
+              <Button variant="outline" size="icon" disabled={isMarketDataLoading} onClick={updateData}>
                 {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
               <AddInvestmentForm />
@@ -711,3 +724,5 @@ export default function Home() {
   );
 
 }
+
+    

@@ -88,7 +88,7 @@ const MOCK_MARKET_DATA: MarketStock[] = [
     { name: 'ITC', price: 433.50, change: 0.85, chartData: generateChartData(433.50) },
     { name: 'HINDUNILVR', price: 2550.70, change: -0.15, chartData: generateChartData(2550.70) },
     { name: 'LT', price: 3610.00, change: 1.50, chartData: generateChartData(3610.00) },
-    { name: 'SBI', price: 835.25, change: 2.55, chartData: generateChartData(835.25) },
+    { name: 'TATAMOTORS', price: 975.00, change: 1.75, chartData: generateChartData(975.00) },
     { name: 'ADANIENT', price: 3250.00, change: -2.75, chartData: generateChartData(3250.00) },
     { name: 'MARUTI', price: 12800.45, change: 0.95, chartData: generateChartData(12800.45) },
 ];
@@ -148,7 +148,7 @@ export default function Home() {
     setMarketDataError(null);
 
     try {
-      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC", "HINDUNILVR", "LT", "SBI", "ADANIENT", "MARUTI"];
+      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC", "HINDUNILVR", "LT", "TATAMOTORS", "ADANIENT", "MARUTI"];
       const fetchedData = await fetchMarketData(symbols);
       
       if (fetchedData.length > 0) {
@@ -726,5 +726,7 @@ export default function Home() {
   );
 
 }
+
+    
 
     

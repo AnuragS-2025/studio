@@ -67,29 +67,17 @@ interface MarketStock {
   chartData: { value: number }[];
 }
 
-const generateChartData = (base: number, points = 12) => {
-    const data = [];
-    let currentValue = base;
-    for (let i = 0; i < points; i++) {
-        const volatility = (Math.random() - 0.5) * 2; // -1 to 1
-        currentValue += volatility * (base * 0.05); // 5% volatility
-        if (currentValue <= 0) currentValue = base * 0.1; // Prevent zero or negative prices
-        data.push({ value: Math.round(currentValue * 100) / 100 });
-    }
-    return data;
-};
-
 const MOCK_MARKET_DATA: MarketStock[] = [
-    { name: 'RELIANCE', price: 2980.55, change: 1.05, chartData: generateChartData(2980.55) },
-    { name: 'TCS', price: 3900.80, change: -0.25, chartData: generateChartData(3900.80) },
-    { name: 'HDFCBANK', price: 1705.10, change: 2.15, chartData: generateChartData(1705.10) },
-    { name: 'INFY', price: 1580.20, change: -1.10, chartData: generateChartData(1580.20) },
-    { name: 'ITC', price: 433.50, change: 0.85, chartData: generateChartData(433.50) },
-    { name: 'HINDUNILVR', price: 2550.70, change: -0.15, chartData: generateChartData(2550.70) },
-    { name: 'LT', price: 3610.00, change: 1.50, chartData: generateChartData(3610.00) },
-    { name: 'TATAMOTORS', price: 975.00, change: 1.75, chartData: generateChartData(975.00) },
-    { name: 'ADANIENT', price: 3250.00, change: -2.75, chartData: generateChartData(3250.00) },
-    { name: 'MARUTI', price: 12800.45, change: 0.95, chartData: generateChartData(12800.45) },
+    { name: 'RELIANCE', price: 2980.55, change: 1.05, chartData: [] },
+    { name: 'TCS', price: 3900.80, change: -0.25, chartData: [] },
+    { name: 'HDFCBANK', price: 1705.10, change: 2.15, chartData: [] },
+    { name: 'INFY', price: 1580.20, change: -1.10, chartData: [] },
+    { name: 'ITC', price: 433.50, change: 0.85, chartData: [] },
+    { name: 'HINDUNILVR', price: 2550.70, change: -0.15, chartData: [] },
+    { name: 'LT', price: 3610.00, change: 1.50, chartData: [] },
+    { name: 'TATAMOTORS', price: 975.00, change: 1.75, chartData: [] },
+    { name: 'ADANIENT', price: 3250.00, change: -2.75, chartData: [] },
+    { name: 'MARUTI', price: 12800.45, change: 0.95, chartData: [] },
 ];
 
 
@@ -147,18 +135,11 @@ export default function Home() {
     setMarketDataError(null);
 
     try {
-      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC", "HINDUNILVR", "LT", "TATAMOTORS", "ADANIENT", "MARUTI"];
+      const symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY"];
       const fetchedData = await fetchMarketData(symbols);
-      
-      if (fetchedData.length > 0) {
-        setMarketData(fetchedData);
-      } else {
-        setMarketDataError("Could not fetch live market data. The API may be unavailable or symbols are invalid.");
-        setMarketData(MOCK_MARKET_DATA);
-      }
+      setMarketData(fetchedData);
     } catch (error) {
-      setMarketDataError("Failed to fetch live market data due to a network or unexpected error.");
-      setMarketData(MOCK_MARKET_DATA);
+      setMarketDataError("Failed to fetch live market data.");
     } finally {
       setIsMarketDataLoading(false);
     }

@@ -36,4 +36,5 @@ function generateMockChart(base: number, points = 12) {
     current += (Math.random() - 0.5) * (base * 0.02);
     data.push({ value: Math.round(current * 100) / 100 });
   }
-  
+  return data;
+}

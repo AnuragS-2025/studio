@@ -134,6 +134,10 @@ export default function Home() {
       }
   });
 
+  const updateData = useCallback(async () => {
+  
+  }, [investments, toast]);
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <main className="flex flex-1 flex-col gap-4">
@@ -318,7 +322,6 @@ export default function Home() {
                   </div>
                    <Button variant="outline" size="sm" disabled={isMarketDataLoading}>
                     {isMarketDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    <span className="ml-2 hidden sm:inline">Refresh Data</span>
                   </Button>
                 </CardHeader>
                 {marketDataError && (

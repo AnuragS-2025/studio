@@ -23,10 +23,7 @@ export async function fetchMarketData(symbols: string[]) {
       const data = await response.json();
       const quote = data["Global Quote"];
 
-      if (!quote || Object.keys(quote).length === 0) {
-        console.warn(`No data for symbol: ${symbol}. It might be an invalid symbol or an API limit was reached.`);
-        continue;
-      };
+      if (!quote) continue;
 
       results.push({
         name: symbol,
@@ -41,5 +38,3 @@ export async function fetchMarketData(symbols: string[]) {
 
   return results;
 }
-
-    
